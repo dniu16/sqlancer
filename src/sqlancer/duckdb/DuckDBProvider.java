@@ -25,7 +25,7 @@ import sqlancer.duckdb.gen.DuckDBInsertGenerator;
 import sqlancer.duckdb.gen.DuckDBRandomQuerySynthesizer;
 import sqlancer.duckdb.gen.DuckDBTableGenerator;
 import sqlancer.duckdb.gen.DuckDBUpdateGenerator;
-import sqlancer.duckdb.gen.DuckDBViewGenerator;
+//import sqlancer.duckdb.gen.DuckDBViewGenerator;
 
 public class DuckDBProvider extends ProviderAdapter<DuckDBGlobalState, DuckDBOptions> {
 
@@ -41,7 +41,7 @@ public class DuckDBProvider extends ProviderAdapter<DuckDBGlobalState, DuckDBOpt
         ANALYZE((g) -> new QueryAdapter("ANALYZE;")), //
         DELETE(DuckDBDeleteGenerator::generate), //
         UPDATE(DuckDBUpdateGenerator::getQuery), //
-        CREATE_VIEW(DuckDBViewGenerator::generate), //
+//        CREATE_VIEW(DuckDBViewGenerator::generate), //
         EXPLAIN((g) -> {
             Set<String> errors = new HashSet<>();
             DuckDBErrors.addExpressionErrors(errors);
@@ -82,8 +82,8 @@ public class DuckDBProvider extends ProviderAdapter<DuckDBGlobalState, DuckDBOpt
             return r.getInteger(0, 2);
         case DELETE:
             return r.getInteger(0, globalState.getDmbsSpecificOptions().maxNumDeletes + 1);
-        case CREATE_VIEW:
-            return r.getInteger(0, globalState.getDmbsSpecificOptions().maxNumViews + 1);
+//        case CREATE_VIEW:
+//            return r.getInteger(0, globalState.getDmbsSpecificOptions().maxNumViews + 1);
         default:
             throw new AssertionError(a);
         }

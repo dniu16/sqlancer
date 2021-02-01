@@ -18,7 +18,7 @@ import sqlancer.duckdb.DuckDBSchema.DuckDBColumn;
 import sqlancer.duckdb.DuckDBSchema.DuckDBTable;
 import sqlancer.duckdb.DuckDBSchema.DuckDBTables;
 import sqlancer.duckdb.ast.DuckDBExpression;
-import sqlancer.duckdb.ast.DuckDBJoin;
+//import sqlancer.duckdb.ast.DuckDBJoin;
 import sqlancer.duckdb.ast.DuckDBSelect;
 import sqlancer.duckdb.gen.DuckDBExpressionGenerator;
 import sqlancer.gen.ExpressionGenerator;
@@ -47,8 +47,8 @@ public class DuckDBQueryPartitioningBase
         List<DuckDBTable> tables = targetTables.getTables();
         List<TableReferenceNode<DuckDBExpression, DuckDBTable>> tableList = tables.stream()
                 .map(t -> new TableReferenceNode<DuckDBExpression, DuckDBTable>(t)).collect(Collectors.toList());
-        List<Node<DuckDBExpression>> joins = DuckDBJoin.getJoins(tableList, state);
-        select.setJoinList(joins.stream().collect(Collectors.toList()));
+//        List<Node<DuckDBExpression>> joins = DuckDBJoin.getJoins(tableList, state);
+//        select.setJoinList(joins.stream().collect(Collectors.toList()));
         select.setFromList(tableList.stream().collect(Collectors.toList()));
         select.setWhereClause(null);
     }

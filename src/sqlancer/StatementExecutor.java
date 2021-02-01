@@ -29,6 +29,8 @@ public class StatementExecutor<G extends GlobalState<?, ?>, A extends AbstractAc
     }
 
     public void executeStatements() throws SQLException {
+        // casting: value::timestamp instead of timestamp at the start
+        // exclude pg_tables from table list
         Randomly r = globalState.getRandomly();
         int[] nrRemaining = new int[actions.length];
         List<A> availableActions = new ArrayList<>();
@@ -42,7 +44,11 @@ public class StatementExecutor<G extends GlobalState<?, ?>, A extends AbstractAc
             nrRemaining[i] = nrPerformed;
             total += nrPerformed;
         }
+        System.out.println("Statement Executor");
+        System.out.println(actions);
+        System.out.println(availableActions);
         while (total != 0) {
+            System.out.println("Total: "+total);
             A nextAction = null;
             int selection = r.getInteger(0, total);
             int previousRange = 0;
@@ -63,7 +69,9 @@ public class StatementExecutor<G extends GlobalState<?, ?>, A extends AbstractAc
                 boolean success;
                 int nrTries = 0;
                 do {
+                    System.out.println("Statement executor: enter");
                     query = nextAction.getQuery(globalState);
+                    System.out.println("Statement executor: "+query.getQueryString());
                     success = globalState.executeStatement(query);
                 } while (nextAction.canBeRetried() && !success
                         && nrTries++ < globalState.getOptions().getNrStatementRetryCount());
@@ -76,5 +84,6 @@ public class StatementExecutor<G extends GlobalState<?, ?>, A extends AbstractAc
             }
             total--;
         }
+        System.out.println("Finished");
     }
 }

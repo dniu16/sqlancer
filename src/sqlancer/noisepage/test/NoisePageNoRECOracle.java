@@ -28,6 +28,7 @@ import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTables;
 import sqlancer.noisepage.NoisePageToStringVisitor;
 import sqlancer.noisepage.ast.NoisePageExpression;
+//import sqlancer.noisepage.ast.NoisePageJoin;
 import sqlancer.noisepage.ast.NoisePageJoin;
 import sqlancer.noisepage.ast.NoisePageSelect;
 import sqlancer.noisepage.gen.NoisePageExpressionGenerator;
@@ -52,17 +53,17 @@ public class NoisePageNoRECOracle extends NoRECBase<NoisePageGlobalState> implem
         List<NoisePageTable> tables = randomTables.getTables();
         List<TableReferenceNode<NoisePageExpression, NoisePageTable>> tableList = tables.stream()
                 .map(t -> new TableReferenceNode<NoisePageExpression, NoisePageTable>(t)).collect(Collectors.toList());
-        List<Node<NoisePageExpression>> joins = NoisePageJoin.getJoins(tableList, state);
-        int secondCount = getSecondQuery(tableList.stream().collect(Collectors.toList()), randomWhereCondition, joins);
-        int firstCount = getFirstQueryCount(con, tableList.stream().collect(Collectors.toList()), columns,
-                randomWhereCondition, joins);
-        if (firstCount == -1 || secondCount == -1) {
-            throw new IgnoreMeException();
-        }
-        if (firstCount != secondCount) {
-            throw new AssertionError(
-                    optimizedQueryString + "; -- " + firstCount + "\n" + unoptimizedQueryString + " -- " + secondCount);
-        }
+//        List<Node<NoisePageExpression>> joins = NoisePageJoin.getJoins(tableList, state);
+//        int secondCount = getSecondQuery(tableList.stream().collect(Collectors.toList()), randomWhereCondition, joins);
+//        int firstCount = getFirstQueryCount(con, tableList.stream().collect(Collectors.toList()), columns,
+//                randomWhereCondition, joins);
+//        if (firstCount == -1 || secondCount == -1) {
+//            throw new IgnoreMeException();
+//        }
+//        if (firstCount != secondCount) {
+//            throw new AssertionError(
+//                    optimizedQueryString + "; -- " + firstCount + "\n" + unoptimizedQueryString + " -- " + secondCount);
+//        }
     }
 
     private int getSecondQuery(List<Node<NoisePageExpression>> tableList, Node<NoisePageExpression> randomWhereCondition,

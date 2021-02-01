@@ -133,18 +133,18 @@ public class DuckDBQueryPartitioningAggregateTester extends DuckDBQueryPartition
             count = new DuckDBCastOperation(new NewFunctionNode<>(aggregate.getArgs(), DuckDBAggregateFunction.COUNT),
                     new DuckDBCompositeDataType(DuckDBDataType.FLOAT, 8));
             return aliasArgs(Arrays.asList(sum, count));
-        case STDDEV_POP:
-            NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction> sumSquared = new NewFunctionNode<>(
-                    Arrays.asList(new NewBinaryOperatorNode<>(aggregate.getArgs().get(0), aggregate.getArgs().get(0),
-                            DuckDBBinaryArithmeticOperator.MULT)),
-                    DuckDBAggregateFunction.SUM);
-            count = new DuckDBCastOperation(
-                    new NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction>(aggregate.getArgs(),
-                            DuckDBAggregateFunction.COUNT),
-                    new DuckDBCompositeDataType(DuckDBDataType.FLOAT, 8));
-            NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction> avg = new NewFunctionNode<>(aggregate.getArgs(),
-                    DuckDBAggregateFunction.AVG);
-            return aliasArgs(Arrays.asList(sumSquared, count, avg));
+//        case STDDEV_POP:
+//            NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction> sumSquared = new NewFunctionNode<>(
+//                    Arrays.asList(new NewBinaryOperatorNode<>(aggregate.getArgs().get(0), aggregate.getArgs().get(0),
+//                            DuckDBBinaryArithmeticOperator.MULT)),
+//                    DuckDBAggregateFunction.SUM);
+//            count = new DuckDBCastOperation(
+//                    new NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction>(aggregate.getArgs(),
+//                            DuckDBAggregateFunction.COUNT),
+//                    new DuckDBCompositeDataType(DuckDBDataType.FLOAT, 8));
+//            NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction> avg = new NewFunctionNode<>(aggregate.getArgs(),
+//                    DuckDBAggregateFunction.AVG);
+//            return aliasArgs(Arrays.asList(sumSquared, count, avg));
         default:
             throw new AssertionError(aggregate.getFunc());
         }
@@ -161,8 +161,8 @@ public class DuckDBQueryPartitioningAggregateTester extends DuckDBQueryPartition
 
     private String getOuterAggregateFunction(NewFunctionNode<DuckDBExpression, DuckDBAggregateFunction> aggregate) {
         switch (aggregate.getFunc()) {
-        case STDDEV_POP:
-            return "sqrt(SUM(agg0)/SUM(agg1)-SUM(agg2)*SUM(agg2))";
+//        case STDDEV_POP:
+//            return "sqrt(SUM(agg0)/SUM(agg1)-SUM(agg2)*SUM(agg2))";
         case AVG:
             return "SUM(agg0::FLOAT)/SUM(agg1)::FLOAT";
         case COUNT:

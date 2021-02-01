@@ -28,7 +28,7 @@ import sqlancer.duckdb.DuckDBSchema.DuckDBTable;
 import sqlancer.duckdb.DuckDBSchema.DuckDBTables;
 import sqlancer.duckdb.DuckDBToStringVisitor;
 import sqlancer.duckdb.ast.DuckDBExpression;
-import sqlancer.duckdb.ast.DuckDBJoin;
+//import sqlancer.duckdb.ast.DuckDBJoin;
 import sqlancer.duckdb.ast.DuckDBSelect;
 import sqlancer.duckdb.gen.DuckDBExpressionGenerator;
 import sqlancer.duckdb.gen.DuckDBExpressionGenerator.DuckDBCastOperation;
@@ -52,17 +52,17 @@ public class DuckDBNoRECOracle extends NoRECBase<DuckDBGlobalState> implements T
         List<DuckDBTable> tables = randomTables.getTables();
         List<TableReferenceNode<DuckDBExpression, DuckDBTable>> tableList = tables.stream()
                 .map(t -> new TableReferenceNode<DuckDBExpression, DuckDBTable>(t)).collect(Collectors.toList());
-        List<Node<DuckDBExpression>> joins = DuckDBJoin.getJoins(tableList, state);
-        int secondCount = getSecondQuery(tableList.stream().collect(Collectors.toList()), randomWhereCondition, joins);
-        int firstCount = getFirstQueryCount(con, tableList.stream().collect(Collectors.toList()), columns,
-                randomWhereCondition, joins);
-        if (firstCount == -1 || secondCount == -1) {
-            throw new IgnoreMeException();
-        }
-        if (firstCount != secondCount) {
-            throw new AssertionError(
-                    optimizedQueryString + "; -- " + firstCount + "\n" + unoptimizedQueryString + " -- " + secondCount);
-        }
+//        List<Node<DuckDBExpression>> joins = DuckDBJoin.getJoins(tableList, state);
+//        int secondCount = getSecondQuery(tableList.stream().collect(Collectors.toList()), randomWhereCondition, joins);
+//        int firstCount = getFirstQueryCount(con, tableList.stream().collect(Collectors.toList()), columns,
+//                randomWhereCondition, joins);
+//        if (firstCount == -1 || secondCount == -1) {
+//            throw new IgnoreMeException();
+//        }
+//        if (firstCount != secondCount) {
+//            throw new AssertionError(
+//                    optimizedQueryString + "; -- " + firstCount + "\n" + unoptimizedQueryString + " -- " + secondCount);
+//        }
     }
 
     private int getSecondQuery(List<Node<DuckDBExpression>> tableList, Node<DuckDBExpression> randomWhereCondition,

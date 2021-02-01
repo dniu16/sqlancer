@@ -133,18 +133,18 @@ public class NoisePageQueryPartitioningAggregateTester extends NoisePageQueryPar
             count = new NoisePageCastOperation(new NewFunctionNode<>(aggregate.getArgs(), NoisePageAggregateFunction.COUNT),
                     new NoisePageCompositeDataType(NoisePageDataType.FLOAT, 8));
             return aliasArgs(Arrays.asList(sum, count));
-        case STDDEV_POP:
-            NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction> sumSquared = new NewFunctionNode<>(
-                    Arrays.asList(new NewBinaryOperatorNode<>(aggregate.getArgs().get(0), aggregate.getArgs().get(0),
-                            NoisePageBinaryArithmeticOperator.MULT)),
-                    NoisePageAggregateFunction.SUM);
-            count = new NoisePageCastOperation(
-                    new NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction>(aggregate.getArgs(),
-                            NoisePageAggregateFunction.COUNT),
-                    new NoisePageCompositeDataType(NoisePageDataType.FLOAT, 8));
-            NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction> avg = new NewFunctionNode<>(aggregate.getArgs(),
-                    NoisePageAggregateFunction.AVG);
-            return aliasArgs(Arrays.asList(sumSquared, count, avg));
+//        case STDDEV_POP:
+//            NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction> sumSquared = new NewFunctionNode<>(
+//                    Arrays.asList(new NewBinaryOperatorNode<>(aggregate.getArgs().get(0), aggregate.getArgs().get(0),
+//                            NoisePageBinaryArithmeticOperator.MULT)),
+//                    NoisePageAggregateFunction.SUM);
+//            count = new NoisePageCastOperation(
+//                    new NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction>(aggregate.getArgs(),
+//                            NoisePageAggregateFunction.COUNT),
+//                    new NoisePageCompositeDataType(NoisePageDataType.FLOAT, 8));
+//            NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction> avg = new NewFunctionNode<>(aggregate.getArgs(),
+//                    NoisePageAggregateFunction.AVG);
+//            return aliasArgs(Arrays.asList(sumSquared, count, avg));
         default:
             throw new AssertionError(aggregate.getFunc());
         }
@@ -161,8 +161,8 @@ public class NoisePageQueryPartitioningAggregateTester extends NoisePageQueryPar
 
     private String getOuterAggregateFunction(NewFunctionNode<NoisePageExpression, NoisePageAggregateFunction> aggregate) {
         switch (aggregate.getFunc()) {
-        case STDDEV_POP:
-            return "sqrt(SUM(agg0)/SUM(agg1)-SUM(agg2)*SUM(agg2))";
+//        case STDDEV_POP:
+//            return "sqrt(SUM(agg0)/SUM(agg1)-SUM(agg2)*SUM(agg2))";
         case AVG:
             return "SUM(agg0::FLOAT)/SUM(agg1)::FLOAT";
         case COUNT:

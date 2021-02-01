@@ -18,7 +18,7 @@ import sqlancer.noisepage.NoisePageSchema.NoisePageColumn;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTables;
 import sqlancer.noisepage.ast.NoisePageExpression;
-import sqlancer.noisepage.ast.NoisePageJoin;
+//import sqlancer.noisepage.ast.NoisePageJoin;
 import sqlancer.noisepage.ast.NoisePageSelect;
 import sqlancer.noisepage.gen.NoisePageExpressionGenerator;
 import sqlancer.gen.ExpressionGenerator;
@@ -47,8 +47,8 @@ public class NoisePageQueryPartitioningBase
         List<NoisePageTable> tables = targetTables.getTables();
         List<TableReferenceNode<NoisePageExpression, NoisePageTable>> tableList = tables.stream()
                 .map(t -> new TableReferenceNode<NoisePageExpression, NoisePageTable>(t)).collect(Collectors.toList());
-        List<Node<NoisePageExpression>> joins = NoisePageJoin.getJoins(tableList, state);
-        select.setJoinList(joins.stream().collect(Collectors.toList()));
+//        List<Node<NoisePageExpression>> joins = NoisePageJoin.getJoins(tableList, state);
+//        select.setJoinList(joins.stream().collect(Collectors.toList()));
         select.setFromList(tableList.stream().collect(Collectors.toList()));
         select.setWhereClause(null);
     }

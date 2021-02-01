@@ -197,8 +197,11 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
     }
 
     public enum DuckDBAggregateFunction {
-        MAX(1), MIN(1), AVG(1), COUNT(1), STRING_AGG(1), FIRST(1), SUM(1), STDDEV_SAMP(1), STDDEV_POP(1), VAR_POP(1),
-        VAR_SAMP(1), COVAR_POP(1), COVAR_SAMP(1);
+        MAX(1), MIN(1), AVG(1), COUNT(1),
+//        STRING_AGG(1),
+        FIRST(1), SUM(1);
+//        STDDEV_SAMP(1), STDDEV_POP(1), VAR_POP(1),
+//        VAR_SAMP(1), COVAR_POP(1), COVAR_SAMP(1);
 
         private int nrArgs;
 
@@ -229,19 +232,19 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
         // math functions
         ABS(1), //
         CEIL(1), //
-        CEILING(1), //
+//        CEILING(1), //
         FLOOR(1), //
-        LOG(1), //
+//        LOG(1), //
         LOG10(1), LOG2(1), //
-        LN(1), //
-        PI(0), //
+//        LN(1), //
+//        PI(0), //
         SQRT(1), //
         POWER(1), //
         CBRT(1), //
         ROUND(2), //
-        SIGN(1), //
-        DEGREES(1), //
-        RADIANS(1), //
+//        SIGN(1), //
+//        DEGREES(1), //
+//        RADIANS(1), //
         MOD(2), //
         // string functions
         LENGTH(1), //
@@ -250,17 +253,18 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
         SUBSTRING(3), //
         REVERSE(1), //
         CONCAT(1, true), //
-        CONCAT_WS(1, true), CONTAINS(2), //
+//        CONCAT_WS(1, true),
+//        CONTAINS(2), //
         PREFIX(2), //
         SUFFIX(2), //
         INSTR(2), //
         PRINTF(1, true), //
-        REGEXP_MATCHES(2), //
-        REGEXP_REPLACE(3), //
+//        REGEXP_MATCHES(2), //
+//        REGEXP_REPLACE(3), //
         STRIP_ACCENTS(1), //
 
         // date functions
-        DATE_PART(2), AGE(2),
+//        DATE_PART(2), AGE(2),
 
         COALESCE(3), NULLIF(2),
 
@@ -269,9 +273,12 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
         LTRIM(1), RTRIM(1),
         // LEFT(2), https://github.com/cwida/duckdb/issues/633
         // REPEAT(2),
-        REPLACE(3), UNICODE(1),
+//        REPLACE(3),
+        UNICODE(1),
 
-        BIT_COUNT(1), BIT_LENGTH(1), LAST_DAY(1), MONTHNAME(1), DAYNAME(1), YEARWEEK(1), DAYOFMONTH(1), WEEKDAY(1),
+        BIT_COUNT(1), BIT_LENGTH(1), LAST_DAY(1),
+//        MONTHNAME(1), DAYNAME(1), YEARWEEK(1),
+        DAYOFMONTH(1), WEEKDAY(1),
         WEEKOFYEAR(1),
 
         IFNULL(2), IF(3);
@@ -344,7 +351,8 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
 
     public enum DuckDBUnaryPrefixOperator implements Operator {
 
-        NOT("NOT"), PLUS("+"), MINUS("-");
+        NOT("NOT"),
+        PLUS("+"), MINUS("-");
 
         private String textRepr;
 
@@ -379,8 +387,8 @@ public final class DuckDBExpressionGenerator extends UntypedExpressionGenerator<
     }
 
     public enum DuckDBBinaryArithmeticOperator implements Operator {
-        CONCAT("||"), ADD("+"), SUB("-"), MULT("*"), DIV("/"), MOD("%"), AND("&"), OR("|"), XOR("#"), LSHIFT("<<"),
-        RSHIFT(">>");
+        CONCAT("||"), ADD("+"), SUB("-"), MULT("*"), DIV("/"), MOD("%");
+//        AND("&"), OR("|"), XOR("#"), LSHIFT("<<"), RSHIFT(">>");
 
         private String textRepr;
 

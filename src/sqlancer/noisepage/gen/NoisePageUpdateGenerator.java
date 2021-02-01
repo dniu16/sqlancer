@@ -20,6 +20,7 @@ public final class NoisePageUpdateGenerator {
     private NoisePageUpdateGenerator() {
     }
 
+
     public static Query getQuery(NoisePageGlobalState globalState) {
         StringBuilder sb = new StringBuilder("UPDATE ");
         Set<String> errors = new HashSet<>();
@@ -35,12 +36,19 @@ public final class NoisePageUpdateGenerator {
             sb.append(columns.get(i).getName());
             sb.append("=");
             Node<NoisePageExpression> expr;
-            if (Randomly.getBooleanWithSmallProbability()) {
-                expr = gen.generateExpression();
-                NoisePageErrors.addExpressionErrors(errors);
-            } else {
-                expr = gen.generateConstant();
-            }
+            System.out.println("update generator: "+columns.get(i).getName());
+            System.out.println("update generator: "+columns.get(i).getType());
+//            if (Randomly.getBooleanWithSmallProbability()) {
+//                System.out.println("small pos");
+//                expr = gen.generateExpression();
+//                NoisePageErrors.addExpressionErrors(errors);
+//            } else {
+//                System.out.println("big pos");
+////                expr = gen.generateConstant();
+//                expr = gen.generateConstant(columns.get(i).getType());
+//            }
+            expr = gen.generateConstant(columns.get(i).getType());
+            System.out.println(expr.toString());
             sb.append(NoisePageToStringVisitor.asString(expr));
         }
         NoisePageErrors.addInsertErrors(errors);

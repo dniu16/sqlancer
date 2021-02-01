@@ -4,7 +4,7 @@ import sqlancer.ast.newast.NewToStringVisitor;
 import sqlancer.ast.newast.Node;
 import sqlancer.duckdb.ast.DuckDBConstant;
 import sqlancer.duckdb.ast.DuckDBExpression;
-import sqlancer.duckdb.ast.DuckDBJoin;
+//import sqlancer.duckdb.ast.DuckDBJoin;
 import sqlancer.duckdb.ast.DuckDBSelect;
 
 public class DuckDBToStringVisitor extends NewToStringVisitor<DuckDBExpression> {
@@ -15,28 +15,30 @@ public class DuckDBToStringVisitor extends NewToStringVisitor<DuckDBExpression> 
             visit((DuckDBConstant) expr);
         } else if (expr instanceof DuckDBSelect) {
             visit((DuckDBSelect) expr);
-        } else if (expr instanceof DuckDBJoin) {
-            visit((DuckDBJoin) expr);
-        } else {
+        }
+//        else if (expr instanceof DuckDBJoin) {
+//            visit((DuckDBJoin) expr);
+//        }
+        else {
             throw new AssertionError(expr.getClass());
         }
     }
 
-    private void visit(DuckDBJoin join) {
-        visit(join.getLeftTable());
-        sb.append(" ");
-        sb.append(join.getJoinType());
-        sb.append(" ");
-        if (join.getOuterType() != null) {
-            sb.append(join.getOuterType());
-        }
-        sb.append(" JOIN ");
-        visit(join.getRightTable());
-        if (join.getOnCondition() != null) {
-            sb.append(" ON ");
-            visit(join.getOnCondition());
-        }
-    }
+//    private void visit(DuckDBJoin join) {
+//        visit(join.getLeftTable());
+//        sb.append(" ");
+//        sb.append(join.getJoinType());
+//        sb.append(" ");
+//        if (join.getOuterType() != null) {
+//            sb.append(join.getOuterType());
+//        }
+//        sb.append(" JOIN ");
+//        visit(join.getRightTable());
+//        if (join.getOnCondition() != null) {
+//            sb.append(" ON ");
+//            visit(join.getOnCondition());
+//        }
+//    }
 
     private void visit(DuckDBConstant constant) {
         sb.append(constant.toString());

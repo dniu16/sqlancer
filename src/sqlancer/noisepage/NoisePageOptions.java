@@ -22,10 +22,11 @@ import sqlancer.noisepage.test.NoisePageQueryPartitioningWhereTester;
 public class NoisePageOptions {
 
     @Parameter(names = "--test-collate", arity = 1)
-    public boolean testCollate = true;
+    public boolean testCollate = false;
 
     @Parameter(names = "--test-check", description = "Allow generating CHECK constraints in tables", arity = 1)
-    public boolean testCheckConstraints = true;
+    public boolean testCheckConstraints = false;
+//    public boolean testCheckConstraints = true;
 
     @Parameter(names = "--test-default-values", description = "Allow generating DEFAULT values in tables", arity = 1)
     public boolean testDefaultValues = true;
@@ -37,16 +38,17 @@ public class NoisePageOptions {
     public boolean testFunctions = true;
 
     @Parameter(names = "--test-casts", description = "Allow generating casts in expressions", arity = 1)
-    public boolean testCasts = true;
+    public boolean testCasts = false;
+//    public boolean testCasts = true;
 
     @Parameter(names = "--test-between", description = "Allow generating the BETWEEN operator in expressions", arity = 1)
-    public boolean testBetween = true;
+    public boolean testBetween = false;
 
     @Parameter(names = "--test-in", description = "Allow generating the IN operator in expressions", arity = 1)
-    public boolean testIn = true;
+    public boolean testIn = false;
 
     @Parameter(names = "--test-case", description = "Allow generating the CASE operator in expressions", arity = 1)
-    public boolean testCase = true;
+    public boolean testCase = false;
 
     @Parameter(names = "--test-binary-logicals", description = "Allow generating AND and OR in expressions", arity = 1)
     public boolean testBinaryLogicals = true;
