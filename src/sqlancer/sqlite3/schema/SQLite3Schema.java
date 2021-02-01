@@ -1,6 +1,5 @@
 package sqlancer.sqlite3.schema;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -10,27 +9,30 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.StateToReproduce.SQLite3StateToReproduce;
-import sqlancer.schema.AbstractTable;
-import sqlancer.schema.AbstractTableColumn;
-import sqlancer.schema.TableIndex;
-import sqlancer.sqlite3.SQLite3Errors;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
-import sqlancer.sqlite3.SQLite3ToStringVisitor;
+import sqlancer.SQLConnection;
+import sqlancer.common.schema.AbstractRelationalTable;
+import sqlancer.common.schema.AbstractRowValue;
+import sqlancer.common.schema.AbstractSchema;
+import sqlancer.common.schema.AbstractTableColumn;
+import sqlancer.common.schema.AbstractTables;
+import sqlancer.common.schema.TableIndex;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.ast.SQLite3Constant;
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Column.SQLite3CollateSequence;
+import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Table;
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Table.TableKind;
 
-public class SQLite3Schema {
+public class SQLite3Schema extends AbstractSchema<SQLite3GlobalState, SQLite3Table> {
 
-    private final List<SQLite3Table> databaseTables;
+    /**
+     * All possible aliases for the rowid column.
+     */
+    public static final List<String> ROWID_STRINGS = Collections
+            .unmodifiableList(Arrays.asList("rowid", "_rowid_", "oid"));
     private final List<String> indexNames;
 
     public List<String> getIndexNames() {
@@ -42,14 +44,6 @@ public class SQLite3Schema {
             throw new IgnoreMeException();
         } else {
             return Randomly.fromList(indexNames);
-        }
-    }
-
-    public SQLite3Table getRandomTableOrBailout() {
-        if (databaseTables.isEmpty()) {
-            throw new IgnoreMeException();
-        } else {
-            return Randomly.fromList(getDatabaseTables());
         }
     }
 
@@ -96,6 +90,8 @@ public class SQLite3Schema {
         /**
          * If a table has a single column primary key and the declared type of that column is "INTEGER" and the table is
          * not a WITHOUT ROWID table, then the column is known as an INTEGER PRIMARY KEY.
+         *
+         * @return whether the column is an INTEGER PRIMARY KEY
          */
         public boolean isIntegerPrimaryKey() {
             return isInteger && isOnlyPrimaryKey() && !getTable().hasWithoutRowid();
@@ -119,69 +115,47 @@ public class SQLite3Schema {
             throws SQLException, AssertionError {
         Object value;
         SQLite3Constant constant;
-        if (randomRowValues.getString(columnIndex) == null) {
-            value = null;
-            constant = SQLite3Constant.createNullConstant();
-        } else {
-            switch (valueType) {
-            case INT:
-                value = randomRowValues.getLong(columnIndex);
-                constant = SQLite3Constant.createIntConstant((long) value);
-                break;
-            case REAL:
-                value = randomRowValues.getDouble(columnIndex);
-                constant = SQLite3Constant.createRealConstant((double) value);
-                break;
-            case TEXT:
-            case NONE:
-                value = randomRowValues.getString(columnIndex);
-                constant = SQLite3Constant.createTextConstant((String) value);
-                break;
-            case BINARY:
-                value = randomRowValues.getBytes(columnIndex);
-                constant = SQLite3Constant.createBinaryConstant((byte[]) value);
-                break;
-            default:
-                throw new AssertionError(valueType);
+        switch (valueType) {
+        case INT:
+            value = randomRowValues.getLong(columnIndex);
+            constant = SQLite3Constant.createIntConstant((long) value);
+            break;
+        case REAL:
+            value = randomRowValues.getDouble(columnIndex);
+            if (!Double.isFinite((double) value)) {
+                // TODO: the JDBC driver seems to sometimes return infinity for NULL values
+                throw new IgnoreMeException();
             }
+            constant = SQLite3Constant.createRealConstant((double) value);
+            break;
+        case TEXT:
+        case NONE:
+            value = randomRowValues.getString(columnIndex);
+            constant = SQLite3Constant.createTextConstant((String) value);
+            break;
+        case BINARY:
+            value = randomRowValues.getBytes(columnIndex);
+            constant = SQLite3Constant.createBinaryConstant((byte[]) value);
+            if (((byte[]) value).length == 0) {
+                // TODO: the JDBC driver seems to sometimes return a zero-length array for NULL values
+                throw new IgnoreMeException();
+            }
+            break;
+        case NULL:
+            return SQLite3Constant.createNullConstant();
+        default:
+            throw new AssertionError(valueType);
         }
         return constant;
     }
 
-    public static class SQLite3Tables {
-        private final List<SQLite3Table> tables;
-        private final List<SQLite3Column> columns;
+    public static class SQLite3Tables extends AbstractTables<SQLite3Table, SQLite3Column> {
 
         public SQLite3Tables(List<SQLite3Table> tables) {
-            this.tables = tables;
-            columns = new ArrayList<>();
-            for (SQLite3Table t : tables) {
-                columns.addAll(t.getColumns());
-            }
+            super(tables);
         }
 
-        public String tableNamesAsString() {
-            return tables.stream().map(t -> t.getName()).collect(Collectors.joining(", "));
-        }
-
-        public List<SQLite3Table> getTables() {
-            return tables;
-        }
-
-        public List<SQLite3Column> getColumns() {
-            return columns;
-        }
-
-        public String columnNamesAsString() {
-            return getColumns().stream().map(t -> t.getTable().getName() + "." + t.getName())
-                    .collect(Collectors.joining(", "));
-        }
-
-        public String columnNamesAsString(Function<SQLite3Column, String> function) {
-            return getColumns().stream().map(function).collect(Collectors.joining(", "));
-        }
-
-        public SQLite3RowValue getRandomRowValue(Connection con, SQLite3StateToReproduce state) throws SQLException {
+        public SQLite3RowValue getRandomRowValue(SQLConnection con) throws SQLException {
             String randomRow = String.format("SELECT %s, %s FROM %s ORDER BY RANDOM() LIMIT 1", columnNamesAsString(
                     c -> c.getTable().getName() + "." + c.getName() + " AS " + c.getTable().getName() + c.getName()),
                     columnNamesAsString(c -> "typeof(" + c.getTable().getName() + "." + c.getName() + ")"),
@@ -195,7 +169,8 @@ public class SQLite3Schema {
                     throw new IgnoreMeException();
                 }
                 if (!randomRowValues.next()) {
-                    throw new AssertionError("could not find random row! " + randomRow + "\n" + state);
+                    throw new IgnoreMeException();
+                    // throw new AssertionError("could not find random row! " + randomRow);
                 }
                 for (int i = 0; i < getColumns().size(); i++) {
                     SQLite3Column column = getColumns().get(i);
@@ -207,7 +182,6 @@ public class SQLite3Schema {
                     values.put(column, constant);
                 }
                 assert !randomRowValues.next();
-                state.randomRowValues = values;
                 return new SQLite3RowValue(this, values);
             }
 
@@ -215,7 +189,7 @@ public class SQLite3Schema {
 
     }
 
-    public static class SQLite3Table extends AbstractTable<SQLite3Column, TableIndex> {
+    public static class SQLite3Table extends AbstractRelationalTable<SQLite3Column, TableIndex, SQLite3GlobalState> {
         // TODO: why does the SQLite implementation have no table indexes?
 
         public enum TableKind {
@@ -225,18 +199,16 @@ public class SQLite3Schema {
         private final TableKind tableType;
         private SQLite3Column rowid;
         private final boolean withoutRowid;
-        private final int nrRows;
         private final boolean isVirtual;
         private final boolean isReadOnly;
 
         public SQLite3Table(String tableName, List<SQLite3Column> columns, TableKind tableType, boolean withoutRowid,
-                int nrRows, boolean isView, boolean isVirtual, boolean isReadOnly) {
+                boolean isView, boolean isVirtual, boolean isReadOnly) {
             super(tableName, columns, Collections.emptyList(), isView);
             this.tableType = tableType;
             this.withoutRowid = withoutRowid;
             this.isVirtual = isVirtual;
             this.isReadOnly = isReadOnly;
-            this.nrRows = nrRows;
         }
 
         public boolean hasWithoutRowid() {
@@ -263,10 +235,6 @@ public class SQLite3Schema {
             return getName().startsWith("sqlit");
         }
 
-        public int getNrRows() {
-            return nrRows;
-        }
-
         public boolean isTemp() {
             return tableType == TableKind.TEMP;
         }
@@ -277,61 +245,17 @@ public class SQLite3Schema {
 
     }
 
-    public static class SQLite3RowValue {
-        private final SQLite3Tables tables;
-        private final Map<SQLite3Column, SQLite3Constant> values;
+    public static class SQLite3RowValue extends AbstractRowValue<SQLite3Tables, SQLite3Column, SQLite3Constant> {
 
         SQLite3RowValue(SQLite3Tables tables, Map<SQLite3Column, SQLite3Constant> values) {
-            this.tables = tables;
-            this.values = values;
-        }
-
-        public SQLite3Tables getTable() {
-            return tables;
-        }
-
-        public Map<SQLite3Column, SQLite3Constant> getValues() {
-            return values;
-        }
-
-        @Override
-        public String toString() {
-            StringBuffer sb = new StringBuffer();
-            int i = 0;
-            for (SQLite3Column c : tables.getColumns()) {
-                if (i++ != 0) {
-                    sb.append(", ");
-                }
-                sb.append(values.get(c));
-            }
-            return sb.toString();
-        }
-
-        public String getRowValuesAsString() {
-            List<SQLite3Column> columnsToCheck = tables.getColumns();
-            return getRowValuesAsString(columnsToCheck);
-        }
-
-        public String getRowValuesAsString(List<SQLite3Column> columnsToCheck) {
-            StringBuilder sb = new StringBuilder();
-            Map<SQLite3Column, SQLite3Constant> expectedValues = getValues();
-            for (int i = 0; i < columnsToCheck.size(); i++) {
-                if (i != 0) {
-                    sb.append(", ");
-                }
-                SQLite3Constant expectedColumnValue = expectedValues.get(columnsToCheck.get(i));
-                SQLite3ToStringVisitor visitor = new SQLite3ToStringVisitor();
-                visitor.visit(expectedColumnValue);
-                sb.append(visitor.get());
-            }
-            return sb.toString();
+            super(tables, values);
         }
 
     }
 
     public SQLite3Schema(List<SQLite3Table> databaseTables, List<String> indexNames) {
+        super(databaseTables);
         this.indexNames = indexNames;
-        this.databaseTables = Collections.unmodifiableList(databaseTables);
     }
 
     @Override
@@ -344,31 +268,10 @@ public class SQLite3Schema {
         return sb.toString();
     }
 
-    public static int getNrRows(SQLite3GlobalState globalState, String table) throws SQLException {
-        String string = "SELECT COUNT(*) FROM " + table;
-        List<String> errors = new ArrayList<>();
-        errors.add("ORDER BY term out of range");
-        errors.addAll(Arrays.asList("second argument to nth_value must be a positive integer",
-                "ON clause references tables to its right", "no such table", "no query solution", "no such index",
-                "GROUP BY term", "is circularly defined", "misuse of aggregate", "no such column",
-                "misuse of window function"));
-        SQLite3Errors.addExpectedExpressionErrors(errors);
-        QueryAdapter q = new QueryAdapter(string, errors);
-        try (ResultSet query = q.executeAndGet(globalState)) {
-            if (query == null) {
-                throw new IgnoreMeException();
-            }
-            query.next();
-            int int1 = query.getInt(1);
-            query.getStatement().close();
-            return int1;
-        }
-    }
-
     public static SQLite3Schema fromConnection(SQLite3GlobalState globalState) throws SQLException {
         List<SQLite3Table> databaseTables = new ArrayList<>();
         List<String> indexNames = new ArrayList<>();
-        Connection con = globalState.getConnection();
+        SQLConnection con = globalState.getConnection();
 
         try (Statement s = con.createStatement()) {
             try (ResultSet rs = s.executeQuery("SELECT name, type as category, sql FROM sqlite_master UNION "
@@ -387,7 +290,6 @@ public class SQLite3Schema {
                             || tableName.endsWith("_config") || tableName.endsWith("_segdir")
                             || tableName.endsWith("_stat") || tableName.endsWith("_segments")
                             || tableName.contains("_")) {
-                        isReadOnly = true;
                         continue; // TODO
                     } else if (sqlString.contains("using dbstat")) {
                         isReadOnly = true;
@@ -402,18 +304,11 @@ public class SQLite3Schema {
                     boolean isDbStatsTable = sqlString.contains("using dbstat");
                     List<SQLite3Column> databaseColumns = getTableColumns(con, tableName, sqlString, isView,
                             isDbStatsTable);
-                    int nrRows;
-                    try {
-                        // FIXME
-                        nrRows = getNrRows(globalState, tableName);
-                    } catch (IgnoreMeException e) {
-                        nrRows = 0;
-                    }
                     SQLite3Table t = new SQLite3Table(tableName, databaseColumns,
                             tableType.contentEquals("temp_table") ? TableKind.TEMP : TableKind.MAIN, withoutRowid,
-                            nrRows, isView, isVirtual, isReadOnly);
+                            isView, isVirtual, isReadOnly);
                     if (isRowIdTable(withoutRowid, isView, isVirtual)) {
-                        String rowId = Randomly.fromOptions("rowid", "_rowid_", "oid");
+                        String rowId = Randomly.fromList(ROWID_STRINGS);
                         SQLite3Column rowid = new SQLite3Column(rowId, SQLite3DataType.INT, true, null, true);
                         t.addRowid(rowid);
                         rowid.setTable(t);
@@ -435,6 +330,10 @@ public class SQLite3Schema {
                     }
                     indexNames.add(name);
                 }
+            } catch (SQLException e) {
+                if (!e.getMessage().contains("The database file is locked")) {
+                    throw new AssertionError(e);
+                }
             }
         }
 
@@ -446,7 +345,7 @@ public class SQLite3Schema {
         return !isView && !isVirtual && !withoutRowid;
     }
 
-    private static List<SQLite3Column> getTableColumns(Connection con, String tableName, String sql, boolean isView,
+    private static List<SQLite3Column> getTableColumns(SQLConnection con, String tableName, String sql, boolean isView,
             boolean isDbStatsTable) throws SQLException {
         List<SQLite3Column> databaseColumns = new ArrayList<>();
         try (Statement s2 = con.createStatement()) {
@@ -478,7 +377,8 @@ public class SQLite3Schema {
                             columnTypeString.contentEquals("INTEGER"), isPrimaryKey, collate));
                 }
             }
-        } catch (Exception e) {
+        } catch (SQLException e) {
+
         }
         if (databaseColumns.isEmpty()) {
             // only generated columns
@@ -539,80 +439,27 @@ public class SQLite3Schema {
         return columnType;
     }
 
-    public SQLite3Table getRandomTable() {
-        return Randomly.fromList(getDatabaseTables());
-    }
-
-    public SQLite3Table getRandomTable(Predicate<SQLite3Table> predicate) {
-        List<SQLite3Table> collect = databaseTables.stream().filter(predicate).collect(Collectors.toList());
-        if (collect.isEmpty()) {
-            throw new IgnoreMeException();
-        }
-        return Randomly.fromList(collect);
-    }
-
-    public List<SQLite3Table> getTables(Predicate<SQLite3Table> predicate) {
-        return databaseTables.stream().filter(predicate).collect(Collectors.toList());
-    }
-
-    public SQLite3Table getRandomTableOrBailout(Predicate<SQLite3Table> predicate) {
-        List<SQLite3Table> tables = databaseTables.stream().filter(predicate).collect(Collectors.toList());
-        if (tables.isEmpty()) {
-            throw new IgnoreMeException();
-        } else {
-            return Randomly.fromList(tables);
-        }
-    }
-
     public SQLite3Table getRandomVirtualTable() {
         return getRandomTable(p -> p.isVirtual);
     }
 
-    public List<SQLite3Table> getDatabaseTables() {
-        return databaseTables;
-    }
-
     public SQLite3Tables getTables() {
-        return new SQLite3Tables(databaseTables);
+        return new SQLite3Tables(getDatabaseTables());
     }
 
     public SQLite3Tables getRandomTableNonEmptyTables() {
-        if (databaseTables.isEmpty()) {
+        if (getDatabaseTables().isEmpty()) {
             throw new IgnoreMeException();
         }
-        return new SQLite3Tables(Randomly.nonEmptySubset(databaseTables));
-    }
-
-    public SQLite3Table getRandomTableNoViewOrBailout() {
-        List<SQLite3Table> databaseTablesWithoutViews = getDatabaseTablesWithoutViews();
-        if (databaseTablesWithoutViews.isEmpty()) {
-            throw new IgnoreMeException();
-        }
-        return Randomly.fromList(databaseTablesWithoutViews);
+        return new SQLite3Tables(Randomly.nonEmptySubset(getDatabaseTables()));
     }
 
     public SQLite3Table getRandomTableNoViewNoVirtualTable() {
         return Randomly.fromList(getDatabaseTablesWithoutViewsWithoutVirtualTables());
     }
 
-    public List<SQLite3Table> getDatabaseTablesWithoutViews() {
-        return databaseTables.stream().filter(t -> !t.isView()).collect(Collectors.toList());
-    }
-
-    public List<SQLite3Table> getViews() {
-        return databaseTables.stream().filter(t -> t.isView()).collect(Collectors.toList());
-    }
-
-    public SQLite3Table getRandomViewOrBailout() {
-        if (getViews().isEmpty()) {
-            throw new IgnoreMeException();
-        } else {
-            return Randomly.fromList(getViews());
-        }
-    }
-
     public List<SQLite3Table> getDatabaseTablesWithoutViewsWithoutVirtualTables() {
-        return databaseTables.stream().filter(t -> !t.isView() && !t.isVirtual).collect(Collectors.toList());
+        return getDatabaseTables().stream().filter(t -> !t.isView() && !t.isVirtual).collect(Collectors.toList());
     }
 
 }

@@ -1,11 +1,8 @@
 package sqlancer.mariadb.gen;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mariadb.MariaDBErrors;
 import sqlancer.mariadb.MariaDBSchema;
 import sqlancer.mariadb.MariaDBSchema.MariaDBTable;
@@ -16,7 +13,7 @@ public final class MariaDBUpdateGenerator {
     private MariaDBUpdateGenerator() {
     }
 
-    public static Query update(MariaDBSchema s, Randomly r) {
+    public static SQLQueryAdapter update(MariaDBSchema s, Randomly r) {
         MariaDBTable randomTable = s.getRandomTable();
         StringBuilder sb = new StringBuilder("UPDATE ");
         if (Randomly.getBoolean()) {
@@ -40,9 +37,9 @@ public final class MariaDBUpdateGenerator {
             }
             // [WHERE where_condition] [ORDER BY ...] [LIMIT row_count]
         }
-        List<String> errors = new ArrayList<>();
+        ExpectedErrors errors = new ExpectedErrors();
         MariaDBErrors.addInsertErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

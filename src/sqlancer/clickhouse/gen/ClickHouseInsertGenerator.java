@@ -1,43 +1,47 @@
 package sqlancer.clickhouse.gen;
 
 import java.sql.SQLException;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
+import sqlancer.clickhouse.ClickHouseErrors;
 import sqlancer.clickhouse.ClickHouseProvider.ClickHouseGlobalState;
 import sqlancer.clickhouse.ClickHouseSchema.ClickHouseColumn;
 import sqlancer.clickhouse.ClickHouseSchema.ClickHouseTable;
 import sqlancer.clickhouse.ClickHouseToStringVisitor;
-import sqlancer.gen.AbstractInsertGenerator;
+import sqlancer.common.gen.AbstractInsertGenerator;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public class ClickHouseInsertGenerator extends AbstractInsertGenerator<ClickHouseColumn> {
 
     private final ClickHouseGlobalState globalState;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private final ClickHouseExpressionGenerator gen;
 
     public ClickHouseInsertGenerator(ClickHouseGlobalState globalState) {
         this.globalState = globalState;
         gen = new ClickHouseExpressionGenerator(globalState);
-        errors.add("Cannot insert NULL value into a column of type 'Int32'"); // TODO
-        errors.add("Cannot insert NULL value into a column of type 'String'");
+        errors.add("Cannot insert NULL value into a column of type");
         errors.add("Memory limit");
         errors.add("Cannot parse string");
         errors.add("Cannot parse Int32 from String, because value is too short");
+        errors.add("does not return a value of type UInt8");
+        ClickHouseErrors.addExpectedExpressionErrors(errors);
     }
 
-    public static Query getQuery(ClickHouseGlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter getQuery(ClickHouseGlobalState globalState) throws SQLException {
         return new ClickHouseInsertGenerator(globalState).get();
     }
 
-    private Query get() {
+    private SQLQueryAdapter get() {
         ClickHouseTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
-        List<ClickHouseColumn> columns = table.getRandomNonEmptyColumnSubset().stream()
-                .filter(c -> !c.isAlias() && !c.isMaterialized()).collect(Collectors.toList());
+        List<ClickHouseColumn> columns = Collections.emptyList();
+        while (columns.isEmpty()) {
+            columns = table.getRandomNonEmptyColumnSubset().stream().filter(c -> !c.isAlias() && !c.isMaterialized())
+                    .collect(Collectors.toList());
+        }
         sb.append("INSERT INTO ");
         sb.append(table.getName());
         sb.append("(");
@@ -45,7 +49,7 @@ public class ClickHouseInsertGenerator extends AbstractInsertGenerator<ClickHous
         sb.append(")");
         sb.append(" VALUES ");
         insertColumns(columns);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
     @Override

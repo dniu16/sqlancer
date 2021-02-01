@@ -4,25 +4,23 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.AbstractAction;
-import sqlancer.CompositeTestOracle;
-import sqlancer.GlobalState;
 import sqlancer.IgnoreMeException;
-import sqlancer.ProviderAdapter;
-import sqlancer.Query;
-import sqlancer.QueryProvider;
 import sqlancer.Randomly;
+import sqlancer.SQLConnection;
+import sqlancer.SQLGlobalState;
+import sqlancer.SQLProviderAdapter;
 import sqlancer.StatementExecutor;
-import sqlancer.TestOracle;
 import sqlancer.clickhouse.ClickHouseProvider.ClickHouseGlobalState;
 import sqlancer.clickhouse.gen.ClickHouseCommon;
 import sqlancer.clickhouse.gen.ClickHouseInsertGenerator;
 import sqlancer.clickhouse.gen.ClickHouseTableGenerator;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLQueryProvider;
 
-public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, ClickHouseOptions> {
+public class ClickHouseProvider extends SQLProviderAdapter<ClickHouseGlobalState, ClickHouseOptions> {
 
     public ClickHouseProvider() {
         super(ClickHouseGlobalState.class, ClickHouseOptions.class);
@@ -32,15 +30,15 @@ public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, C
 
         INSERT(ClickHouseInsertGenerator::getQuery);
 
-        private final QueryProvider<ClickHouseGlobalState> queryProvider;
+        private final SQLQueryProvider<ClickHouseGlobalState> sqlQueryProvider;
 
-        Action(QueryProvider<ClickHouseGlobalState> queryProvider) {
-            this.queryProvider = queryProvider;
+        Action(SQLQueryProvider<ClickHouseGlobalState> sqlQueryProvider) {
+            this.sqlQueryProvider = sqlQueryProvider;
         }
 
         @Override
-        public Query getQuery(ClickHouseGlobalState state) throws SQLException {
-            return queryProvider.getQuery(state);
+        public SQLQueryAdapter getQuery(ClickHouseGlobalState state) throws Exception {
+            return sqlQueryProvider.getQuery(state);
         }
     }
 
@@ -54,7 +52,7 @@ public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, C
         }
     }
 
-    public static class ClickHouseGlobalState extends GlobalState<ClickHouseOptions, ClickHouseSchema> {
+    public static class ClickHouseGlobalState extends SQLGlobalState<ClickHouseOptions, ClickHouseSchema> {
 
         private ClickHouseOptions clickHouseOptions;
 
@@ -77,18 +75,18 @@ public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, C
         }
 
         @Override
-        protected void updateSchema() throws SQLException {
-            setSchema(ClickHouseSchema.fromConnection(getConnection(), getDatabaseName()));
+        protected ClickHouseSchema readSchema() throws SQLException {
+            return ClickHouseSchema.fromConnection(getConnection(), getDatabaseName());
         }
     }
 
     @Override
-    public void generateDatabase(ClickHouseGlobalState globalState) throws SQLException {
+    public void generateDatabase(ClickHouseGlobalState globalState) throws Exception {
         for (int i = 0; i < Randomly.fromOptions(1); i++) {
             boolean success;
             do {
                 String tableName = ClickHouseCommon.createTableName(i);
-                Query qt = ClickHouseTableGenerator.createTableStatement(tableName, globalState);
+                SQLQueryAdapter qt = ClickHouseTableGenerator.createTableStatement(tableName, globalState);
                 success = globalState.executeStatement(qt);
             } while (!success);
         }
@@ -103,19 +101,7 @@ public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, C
     }
 
     @Override
-    protected TestOracle getTestOracle(ClickHouseGlobalState globalState) throws SQLException {
-        List<TestOracle> oracles = globalState.getDmbsSpecificOptions().oracle.stream().map(o -> {
-            try {
-                return o.create(globalState);
-            } catch (SQLException e1) {
-                throw new AssertionError(e1);
-            }
-        }).collect(Collectors.toList());
-        return new CompositeTestOracle(oracles);
-    }
-
-    @Override
-    public Connection createDatabase(ClickHouseGlobalState globalState) throws SQLException {
+    public SQLConnection createDatabase(ClickHouseGlobalState globalState) throws SQLException {
         ClickHouseOptions clickHouseOptions = globalState.getDmbsSpecificOptions();
         globalState.setClickHouseOptions(clickHouseOptions);
         String url = "jdbc:clickhouse://localhost:8123/default";
@@ -141,7 +127,7 @@ public class ClickHouseProvider extends ProviderAdapter<ClickHouseGlobalState, C
         con.close();
         con = DriverManager.getConnection("jdbc:clickhouse://localhost:8123/" + databaseName,
                 globalState.getOptions().getUserName(), globalState.getOptions().getPassword());
-        return con;
+        return new SQLConnection(con);
     }
 
     @Override

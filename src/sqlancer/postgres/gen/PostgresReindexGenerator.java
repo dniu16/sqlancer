@@ -1,13 +1,12 @@
 package sqlancer.postgres.gen;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresIndex;
 
@@ -20,8 +19,8 @@ public final class PostgresReindexGenerator {
         INDEX, TABLE, DATABASE;
     }
 
-    public static Query create(PostgresGlobalState globalState) {
-        List<String> errors = new ArrayList<>();
+    public static SQLQueryAdapter create(PostgresGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
         errors.add("could not create unique index"); // CONCURRENT INDEX
         StringBuilder sb = new StringBuilder();
         sb.append("REINDEX");
@@ -62,7 +61,7 @@ public final class PostgresReindexGenerator {
         errors.add("already contains data"); // FIXME bug report
         errors.add("does not exist"); // internal index
         errors.add("REINDEX is not yet implemented for partitioned indexes");
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

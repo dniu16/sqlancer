@@ -1,15 +1,15 @@
 package sqlancer.mariadb.oracle;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.NoRECBase;
-import sqlancer.QueryAdapter;
-import sqlancer.TestOracle;
+import sqlancer.common.oracle.NoRECBase;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.mariadb.MariaDBProvider.MariaDBGlobalState;
 import sqlancer.mariadb.MariaDBSchema;
 import sqlancer.mariadb.MariaDBSchema.MariaDBColumn;
@@ -63,7 +63,7 @@ public class MariaDBNoRECOracle extends NoRECBase<MariaDBGlobalState> implements
             throw new IgnoreMeException();
         }
         if (optimizedCount != unoptimizedCount) {
-            state.getState().queryString = optimizedQueryString + ";\n" + unoptimizedQueryString + ";";
+            state.getState().getLocalState().log(optimizedQueryString + ";\n" + unoptimizedQueryString + ";");
             throw new AssertionError(optimizedCount + " " + unoptimizedCount);
         }
     }
@@ -81,16 +81,14 @@ public class MariaDBNoRECOracle extends NoRECBase<MariaDBGlobalState> implements
         int secondCount = 0;
 
         unoptimizedQueryString = "SELECT SUM(count) FROM (" + MariaDBVisitor.asString(select) + ") as asdf";
-        QueryAdapter q = new QueryAdapter(unoptimizedQueryString, errors);
-        try (ResultSet rs = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(unoptimizedQueryString, errors);
+        try (SQLancerResultSet rs = q.executeAndGet(state)) {
             if (rs == null) {
                 return NOT_FOUND;
             } else {
                 while (rs.next()) {
                     secondCount = rs.getInt(1);
-                    rs.getStatement().close();
                 }
-                rs.getStatement().close();
             }
         }
 
@@ -108,16 +106,15 @@ public class MariaDBNoRECOracle extends NoRECBase<MariaDBGlobalState> implements
         select.setFromTables(Arrays.asList(randomTable));
         select.setWhereClause(randomWhereCondition);
         select.setSelectType(MariaDBSelectType.ALL);
-        int firstCount = 0;
+        int firstCount;
         optimizedQueryString = MariaDBVisitor.asString(select);
-        QueryAdapter q = new QueryAdapter(optimizedQueryString, errors);
-        try (ResultSet rs = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(optimizedQueryString, errors);
+        try (SQLancerResultSet rs = q.executeAndGet(state)) {
             if (rs == null) {
                 firstCount = NOT_FOUND;
             } else {
                 rs.next();
                 firstCount = rs.getInt(1);
-                rs.getStatement().close();
             }
         } catch (Exception e) {
             throw new AssertionError(optimizedQueryString, e);

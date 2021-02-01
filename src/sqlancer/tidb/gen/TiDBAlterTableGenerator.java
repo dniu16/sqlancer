@@ -1,13 +1,11 @@
 package sqlancer.tidb.gen;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.tidb.TiDBBugs;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBColumn;
@@ -23,8 +21,10 @@ public final class TiDBAlterTableGenerator {
         MODIFY_COLUMN, ENABLE_DISABLE_KEYS, FORCE, DROP_PRIMARY_KEY, ADD_PRIMARY_KEY, CHANGE, DROP_COLUMN, ORDER_BY
     }
 
-    public static Query getQuery(TiDBGlobalState globalState) {
-        Set<String> errors = new HashSet<>();
+    public static SQLQueryAdapter getQuery(TiDBGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
+        errors.add(
+                "Information schema is changed during the execution of the statement(for example, table definition may be updated by other DDL ran in parallel)");
         StringBuilder sb = new StringBuilder("ALTER TABLE ");
         TiDBTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         TiDBColumn column = table.getRandomColumn();
@@ -102,7 +102,7 @@ public final class TiDBAlterTableGenerator {
             throw new AssertionError(a);
         }
 
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
 }

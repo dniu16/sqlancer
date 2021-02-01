@@ -1,21 +1,16 @@
 package sqlancer.cockroachdb.oracle.tlp;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.postgresql.util.PSQLException;
 
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
 import sqlancer.cockroachdb.CockroachDBCommon;
 import sqlancer.cockroachdb.CockroachDBErrors;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
@@ -35,11 +30,15 @@ import sqlancer.cockroachdb.ast.CockroachDBUnaryPostfixOperation;
 import sqlancer.cockroachdb.ast.CockroachDBUnaryPostfixOperation.CockroachDBUnaryPostfixOperator;
 import sqlancer.cockroachdb.gen.CockroachDBExpressionGenerator;
 import sqlancer.cockroachdb.oracle.CockroachDBNoRECOracle;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 
 public class CockroachDBTLPAggregateOracle implements TestOracle {
 
     private final CockroachDBGlobalState state;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private CockroachDBExpressionGenerator gen;
     private String firstResult;
     private String secondResult;
@@ -84,8 +83,8 @@ public class CockroachDBTLPAggregateOracle implements TestOracle {
         metamorphicQuery = createMetamorphicUnionQuery(select, aggregate, from);
         secondResult = getAggregateResult(metamorphicQuery);
 
-        state.getState().queryString = "--" + originalQuery + ";\n--" + metamorphicQuery + "\n-- " + firstResult
-                + "\n-- " + secondResult;
+        state.getState().getLocalState().log(
+                "--" + originalQuery + ";\n--" + metamorphicQuery + "\n-- " + firstResult + "\n-- " + secondResult);
         if (firstResult == null && secondResult != null
                 || firstResult != null && (!firstResult.contentEquals(secondResult)
                         && !ComparatorHelper.isEqualDouble(firstResult, secondResult))) {
@@ -108,7 +107,7 @@ public class CockroachDBTLPAggregateOracle implements TestOracle {
         CockroachDBSelect leftSelect = getSelect(mappedAggregate, from, whereClause, select.getJoinList());
         CockroachDBSelect middleSelect = getSelect(mappedAggregate, from, negatedClause, select.getJoinList());
         CockroachDBSelect rightSelect = getSelect(mappedAggregate, from, notNullClause, select.getJoinList());
-        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate).toString() + " FROM (";
+        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate) + " FROM (";
         metamorphicQuery += CockroachDBVisitor.asString(leftSelect) + " UNION ALL "
                 + CockroachDBVisitor.asString(middleSelect) + " UNION ALL " + CockroachDBVisitor.asString(rightSelect);
         metamorphicQuery += ")";
@@ -117,8 +116,8 @@ public class CockroachDBTLPAggregateOracle implements TestOracle {
 
     private String getAggregateResult(String queryString) throws SQLException {
         String resultString;
-        QueryAdapter q = new QueryAdapter(queryString, errors);
-        try (ResultSet result = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(queryString, errors);
+        try (SQLancerResultSet result = q.executeAndGet(state)) {
             if (result == null) {
                 throw new IgnoreMeException();
             }

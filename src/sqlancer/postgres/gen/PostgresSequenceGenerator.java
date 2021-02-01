@@ -1,11 +1,8 @@
 package sqlancer.postgres.gen;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 
 public final class PostgresSequenceGenerator {
@@ -13,8 +10,8 @@ public final class PostgresSequenceGenerator {
     private PostgresSequenceGenerator() {
     }
 
-    public static Query createSequence(PostgresGlobalState globalState) {
-        List<String> errors = new ArrayList<>();
+    public static SQLQueryAdapter createSequence(PostgresGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
         StringBuilder sb = new StringBuilder("CREATE");
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -87,7 +84,7 @@ public final class PostgresSequenceGenerator {
             // sb.append(s.getRandomTable().getRandomColumn().getFullQualifiedName());
             // }
         }
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

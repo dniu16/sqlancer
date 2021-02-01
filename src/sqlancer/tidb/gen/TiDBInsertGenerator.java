@@ -1,14 +1,12 @@
 package sqlancer.tidb.gen;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.tidb.TiDBErrors;
 import sqlancer.tidb.TiDBExpressionGenerator;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
@@ -19,7 +17,7 @@ import sqlancer.tidb.visitor.TiDBVisitor;
 public class TiDBInsertGenerator {
 
     private final TiDBGlobalState globalState;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private TiDBExpressionGenerator gen;
 
     public TiDBInsertGenerator(TiDBGlobalState globalState) {
@@ -27,11 +25,11 @@ public class TiDBInsertGenerator {
         TiDBErrors.addInsertErrors(errors);
     }
 
-    public static Query getQuery(TiDBGlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter getQuery(TiDBGlobalState globalState) throws SQLException {
         return new TiDBInsertGenerator(globalState).get();
     }
 
-    private Query get() {
+    private SQLQueryAdapter get() {
         TiDBTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         gen = new TiDBExpressionGenerator(globalState).setColumns(table.getColumns());
         StringBuilder sb = new StringBuilder();
@@ -68,7 +66,7 @@ public class TiDBInsertGenerator {
             sb.append(TiDBVisitor.asString(gen.generateExpression()));
         }
         errors.add("Illegal mix of collations");
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
     private void insertColumns(StringBuilder sb, List<TiDBColumn> columns) {

@@ -3,15 +3,14 @@ package sqlancer.mysql.gen.tblmaintenance;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema.MySQLColumn;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
 
 /**
- * @see https://dev.mysql.com/doc/refman/8.0/en/analyze-table.html
+ * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/analyze-table.html">ANALYZE TABLE Statement</a>
  */
 public class MySQLAnalyzeTable {
 
@@ -24,12 +23,12 @@ public class MySQLAnalyzeTable {
         this.r = r;
     }
 
-    public static Query analyze(MySQLGlobalState globalState) {
+    public static SQLQueryAdapter analyze(MySQLGlobalState globalState) {
         return new MySQLAnalyzeTable(globalState.getSchema().getDatabaseTablesRandomSubsetNotEmpty(),
                 globalState.getRandomly()).generate();
     }
 
-    private Query generate() {
+    private SQLQueryAdapter generate() {
         sb.append("ANALYZE ");
         if (Randomly.getBoolean()) {
             sb.append(Randomly.fromOptions("NO_WRITE_TO_BINLOG", "LOCAL"));
@@ -44,7 +43,7 @@ public class MySQLAnalyzeTable {
                 updateHistogram();
             }
         }
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString());
     }
 
     // ANALYZE [NO_WRITE_TO_BINLOG | LOCAL]

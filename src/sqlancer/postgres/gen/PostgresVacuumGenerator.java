@@ -2,12 +2,11 @@ package sqlancer.postgres.gen;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 
@@ -16,7 +15,7 @@ public final class PostgresVacuumGenerator {
     private PostgresVacuumGenerator() {
     }
 
-    public static Query create(PostgresGlobalState globalState) {
+    public static SQLQueryAdapter create(PostgresGlobalState globalState) {
         PostgresTable table = globalState.getSchema().getRandomTable();
         StringBuilder sb = new StringBuilder("VACUUM ");
         if (Randomly.getBoolean()) {
@@ -53,7 +52,7 @@ public final class PostgresVacuumGenerator {
                 }
             }
         }
-        List<String> errors = new ArrayList<>();
+        ExpectedErrors errors = new ExpectedErrors();
         errors.add("VACUUM cannot run inside a transaction block");
         errors.add("deadlock"); /*
                                  * "FULL" commented out due to https://www.postgresql.org/message-id/CA%2Bu7OA6pL%
@@ -61,7 +60,7 @@ public final class PostgresVacuumGenerator {
                                  */
         errors.add("ERROR: ANALYZE option must be specified when a column list is provided");
         errors.add("VACUUM option DISABLE_PAGE_SKIPPING cannot be used with FULL");
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
     private static void addTableAndColumns(PostgresTable table, StringBuilder sb) {

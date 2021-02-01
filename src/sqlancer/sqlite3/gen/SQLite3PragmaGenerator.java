@@ -1,13 +1,12 @@
 package sqlancer.sqlite3.gen;
 
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Supplier;
 
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.sqlite3.SQLite3GlobalState;
 
 public class SQLite3PragmaGenerator {
 
@@ -47,20 +46,10 @@ public class SQLite3PragmaGenerator {
         WAL_CHECKPOINT; //
         // WRITEABLE_SCHEMA
 
-        // VDBE_ADDOPTRACE(PragmaAttribute.DEBUG); // produces too much textual output directly on the console
-        // VDBE_LISTING(PragmaAttribute.DEBUG); // produces too much textual output directly on the console
-
-        Pragma(PragmaAttribute... attrs) {
-        }
-
-        private enum PragmaAttribute {
-            DEBUG /* only available in debug mode */
-        }
-
     }
 
     private final StringBuilder sb = new StringBuilder();
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
 
     public void createPragma(String pragmaName, Supplier<Object> supplier) {
         boolean setSchema = Randomly.getBoolean();
@@ -79,7 +68,7 @@ public class SQLite3PragmaGenerator {
         }
     }
 
-    public QueryAdapter insert(SQLite3GlobalState globalState) {
+    public SQLQueryAdapter insert(SQLite3GlobalState globalState) {
         Randomly r = globalState.getRandomly();
         Pragma p = Randomly.fromOptions(Pragma.values());
         switch (p) {
@@ -154,18 +143,7 @@ public class SQLite3PragmaGenerator {
             }
             break;
         case INTEGRITY_CHECK:
-            // errors.add("malformed JSON");
-            // errors.add("JSON cannot hold BLOB values");
-            // errors.add("json_object() labels must be TEXT");
-            // errors.add("requires an even number of arguments");
-            // errors.add("needs an odd number of arguments");
-            // errors.add("overflow");
-            // errors.add("JSON path error");
-            if (Randomly.getBoolean()) {
-                createPragma("integrity_check", () -> null);
-            } else {
-                sb.append(String.format("PRAGMA integrity_check(%d)", r.getInteger()));
-            }
+            createPragma("integrity_check", () -> null);
             break;
         case JOURNAL_MODE:
             // OFF is no longer generated, since it might corrupt the database upon failed
@@ -242,11 +220,11 @@ public class SQLite3PragmaGenerator {
         }
         sb.append(";");
         String pragmaString = sb.toString();
-        // errors.add("cannot change");
-        return new QueryAdapter(pragmaString, errors);
+        errors.add("The database file is locked");
+        return new SQLQueryAdapter(pragmaString, errors);
     }
 
-    public static QueryAdapter insertPragma(SQLite3GlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter insertPragma(SQLite3GlobalState globalState) throws SQLException {
         return new SQLite3PragmaGenerator().insert(globalState);
     }
 

@@ -1,16 +1,13 @@
 package sqlancer.clickhouse.oracle.tlp;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
 import ru.yandex.clickhouse.domain.ClickHouseDataType;
 import sqlancer.ComparatorHelper;
-import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
+import sqlancer.clickhouse.ClickHouseErrors;
 import sqlancer.clickhouse.ClickHouseProvider;
 import sqlancer.clickhouse.ClickHouseSchema;
 import sqlancer.clickhouse.ClickHouseVisitor;
@@ -22,13 +19,14 @@ import sqlancer.clickhouse.ast.ClickHouseUnaryPrefixOperation;
 import sqlancer.clickhouse.gen.ClickHouseCommon;
 import sqlancer.clickhouse.gen.ClickHouseExpressionGenerator;
 
-public class ClickHouseTLPAggregateOracle implements TestOracle {
+public class ClickHouseTLPAggregateOracle extends ClickHouseTLPBase {
 
-    private final ClickHouseProvider.ClickHouseGlobalState state;
     private ClickHouseExpressionGenerator gen;
 
     public ClickHouseTLPAggregateOracle(ClickHouseProvider.ClickHouseGlobalState state) {
-        this.state = state;
+        super(state);
+        ClickHouseErrors.addExpectedExpressionErrors(errors);
+        ClickHouseErrors.addQueryErrors(errors);
     }
 
     @Override
@@ -50,6 +48,7 @@ public class ClickHouseTLPAggregateOracle implements TestOracle {
             select.setOrderByExpressions(gen.generateOrderBys());
         }
         String originalQuery = ClickHouseVisitor.asString(select);
+        originalQuery += " SETTINGS aggregate_functions_null_for_empty = 1";
 
         ClickHouseExpression whereClause = gen
                 .generateExpression(new ClickHouseSchema.ClickHouseLancerDataType(ClickHouseDataType.UInt8));
@@ -65,40 +64,28 @@ public class ClickHouseTLPAggregateOracle implements TestOracle {
         metamorphicText += ClickHouseVisitor.asString(leftSelect) + " UNION ALL "
                 + ClickHouseVisitor.asString(middleSelect) + " UNION ALL " + ClickHouseVisitor.asString(rightSelect);
         metamorphicText += ")";
+        metamorphicText += " SETTINGS aggregate_functions_null_for_empty = 1";
+        List<String> firstResult = ComparatorHelper.getResultSetFirstColumnAsString(originalQuery, errors, state);
 
-        String firstResult;
-        String secondResult;
-        QueryAdapter q = new QueryAdapter(originalQuery);
-        try (ResultSet result = q.executeAndGet(state)) {
-            if (result == null) {
-                throw new IgnoreMeException();
-            }
-            firstResult = result.getString(1);
-        } catch (Exception e) {
-            // TODO
-            throw new IgnoreMeException();
-        }
+        List<String> secondResult = ComparatorHelper.getResultSetFirstColumnAsString(metamorphicText, errors, state);
 
-        QueryAdapter q2 = new QueryAdapter(metamorphicText);
-        try (ResultSet result = q2.executeAndGet(state)) {
-            if (result == null) {
-                throw new IgnoreMeException();
-            }
-            secondResult = result.getString(1);
-        } catch (Exception e) {
-            // TODO
-            throw new IgnoreMeException();
-        }
-        state.getState().queryString = "--" + originalQuery + "\n--" + metamorphicText + "\n-- " + firstResult + "\n-- "
-                + secondResult;
-        if ((firstResult == null && secondResult != null
-                || firstResult != null && !firstResult.contentEquals(secondResult))
-                && !ComparatorHelper.isEqualDouble(firstResult, secondResult)) {
+        state.getState().getLocalState()
+                .log("--" + originalQuery + "\n--" + metamorphicText + "\n-- " + firstResult + "\n-- " + secondResult
+                        + "\n--first size " + firstResult.size() + "\n--second size " + secondResult.size());
 
+        if (firstResult.size() != secondResult.size()) {
             throw new AssertionError();
-
+        } else if (firstResult.isEmpty()) {
+            return;
+        } else if (firstResult.size() == 1) {
+            if (firstResult.get(0).equals(secondResult.get(0))) {
+                return;
+            } else if (!ComparatorHelper.isEqualDouble(firstResult.get(0), secondResult.get(0))) {
+                throw new AssertionError();
+            }
+        } else {
+            throw new AssertionError();
         }
-
     }
 
     private ClickHouseSelect getSelect(ClickHouseAggregate aggregate, List<ClickHouseExpression> from,

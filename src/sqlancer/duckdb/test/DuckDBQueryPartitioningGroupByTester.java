@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 
 import sqlancer.ComparatorHelper;
 import sqlancer.Randomly;
-import sqlancer.ast.newast.ColumnReferenceNode;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.ColumnReferenceNode;
+import sqlancer.common.ast.newast.Node;
 import sqlancer.duckdb.DuckDBErrors;
 import sqlancer.duckdb.DuckDBProvider.DuckDBGlobalState;
 import sqlancer.duckdb.DuckDBSchema.DuckDBColumn;
@@ -46,10 +46,8 @@ public class DuckDBQueryPartitioningGroupByTester extends DuckDBQueryPartitionin
 
     @Override
     List<Node<DuckDBExpression>> generateFetchColumns() {
-        List<Node<DuckDBExpression>> columns = new ArrayList<>();
-        columns = Randomly.nonEmptySubset(targetTables.getColumns()).stream()
+        return Randomly.nonEmptySubset(targetTables.getColumns()).stream()
                 .map(c -> new ColumnReferenceNode<DuckDBExpression, DuckDBColumn>(c)).collect(Collectors.toList());
-        return columns;
     }
 
 }

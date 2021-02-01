@@ -1,14 +1,13 @@
 package sqlancer.postgres.gen;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.DBMSCommon;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema;
 import sqlancer.postgres.PostgresSchema.PostgresColumn;
@@ -16,7 +15,6 @@ import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
 import sqlancer.postgres.PostgresVisitor;
 import sqlancer.postgres.ast.PostgresExpression;
-import sqlancer.sqlite3.gen.SQLite3Common;
 
 public class PostgresTableGenerator {
 
@@ -27,7 +25,7 @@ public class PostgresTableGenerator {
     private boolean isTemporaryTable;
     private final PostgresSchema newSchema;
     private final List<PostgresColumn> columnsToBeAdded = new ArrayList<>();
-    private final Set<String> errors = new HashSet<>();
+    protected final ExpectedErrors errors = new ExpectedErrors();
     private final PostgresTable table;
     private final boolean generateOnlyKnown;
     private final PostgresGlobalState globalState;
@@ -53,16 +51,19 @@ public class PostgresTableGenerator {
         errors.add("does not accept data type");
         errors.add("but default expression is of type text");
         errors.add("has pseudo-type unknown");
+        errors.add("no collation was derived for partition key column");
+        errors.add("inherits from generated column but specifies identity");
+        errors.add("inherits from generated column but specifies default");
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonTableErrors(errors);
     }
 
-    public static Query generate(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
+    public static SQLQueryAdapter generate(String tableName, PostgresSchema newSchema, boolean generateOnlyKnown,
             PostgresGlobalState globalState) {
         return new PostgresTableGenerator(tableName, newSchema, generateOnlyKnown, globalState).generate();
     }
 
-    private Query generate() {
+    private SQLQueryAdapter generate() {
         columnCanHavePrimaryKey = true;
         sb.append("CREATE");
         if (Randomly.getBoolean()) {
@@ -83,7 +84,7 @@ public class PostgresTableGenerator {
         } else {
             createStandard();
         }
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
     private void createStandard() throws AssertionError {
@@ -92,7 +93,7 @@ public class PostgresTableGenerator {
             if (i != 0) {
                 sb.append(", ");
             }
-            String name = SQLite3Common.createColumnName(i);
+            String name = DBMSCommon.createColumnName(i);
             createColumn(name);
         }
         if (Randomly.getBoolean()) {
@@ -196,6 +197,8 @@ public class PostgresTableGenerator {
             errors.add("cannot inherit from temporary relation");
             errors.add("cannot inherit from partitioned table");
             errors.add("has a collation conflict");
+            errors.add("inherits conflicting default values");
+            errors.add("specifies generation expression");
         }
     }
 

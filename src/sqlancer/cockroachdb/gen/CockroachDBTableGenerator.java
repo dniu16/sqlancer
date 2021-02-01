@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBCommon;
 import sqlancer.cockroachdb.CockroachDBErrors;
@@ -15,6 +14,7 @@ import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBCompositeDataType;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBDataType;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBTable;
 import sqlancer.cockroachdb.CockroachDBVisitor;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public class CockroachDBTableGenerator extends CockroachDBGenerator {
 
@@ -28,7 +28,7 @@ public class CockroachDBTableGenerator extends CockroachDBGenerator {
         canAffectSchema = true;
     }
 
-    public static Query generate(CockroachDBGlobalState globalState) {
+    public static SQLQueryAdapter generate(CockroachDBGlobalState globalState) {
         return new CockroachDBTableGenerator(globalState).getQuery();
     }
 

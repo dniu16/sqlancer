@@ -7,14 +7,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.DBMSCommon;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLBugs;
+import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema;
 import sqlancer.mysql.MySQLSchema.MySQLDataType;
 import sqlancer.mysql.MySQLSchema.MySQLTable.MySQLEngine;
-import sqlancer.sqlite3.gen.SQLite3Common;
 
 public class MySQLTableGenerator {
 
@@ -29,20 +30,22 @@ public class MySQLTableGenerator {
     private int keysSpecified;
     private final List<String> columns = new ArrayList<>();
     private final MySQLSchema schema;
+    private final MySQLGlobalState globalState;
 
-    public MySQLTableGenerator(String tableName, Randomly r, MySQLSchema schema) {
+    public MySQLTableGenerator(MySQLGlobalState globalState, String tableName) {
         this.tableName = tableName;
-        this.r = r;
-        this.schema = schema;
+        this.r = globalState.getRandomly();
+        this.schema = globalState.getSchema();
         allowPrimaryKey = Randomly.getBoolean();
+        this.globalState = globalState;
     }
 
-    public static Query generate(String tableName, Randomly r, MySQLSchema schema) {
-        return new MySQLTableGenerator(tableName, r, schema).create();
+    public static SQLQueryAdapter generate(MySQLGlobalState globalState, String tableName) {
+        return new MySQLTableGenerator(globalState, tableName).create();
     }
 
-    private Query create() {
-        List<String> errors = new ArrayList<>();
+    private SQLQueryAdapter create() {
+        ExpectedErrors errors = new ExpectedErrors();
 
         sb.append("CREATE");
         // TODO support temporary tables in the schema
@@ -55,7 +58,7 @@ public class MySQLTableGenerator {
         if (Randomly.getBoolean() && !schema.getDatabaseTables().isEmpty()) {
             sb.append(" LIKE ");
             sb.append(schema.getRandomTable().getName());
-            return new QueryAdapter(sb.toString(), true);
+            return new SQLQueryAdapter(sb.toString(), true);
         } else {
             sb.append("(");
             for (int i = 0; i < 1 + Randomly.smallNumber(); i++) {
@@ -76,23 +79,25 @@ public class MySQLTableGenerator {
             } else if ((tableHasNullableColumn || keysSpecified > 1) && engine == MySQLEngine.ARCHIVE) {
                 errors.add("Too many keys specified; max 1 keys allowed");
                 errors.add("Table handler doesn't support NULL in given index");
-                errors.add("Got error -1 - 'Unknown error -1' from storage engine");
                 addCommonErrors(errors);
-                return new QueryAdapter(sb.toString(), errors, true);
+                return new SQLQueryAdapter(sb.toString(), errors, true);
             }
             addCommonErrors(errors);
-            return new QueryAdapter(sb.toString(), errors, true);
+            return new SQLQueryAdapter(sb.toString(), errors, true);
         }
 
     }
 
-    private void addCommonErrors(List<String> list) {
+    private void addCommonErrors(ExpectedErrors list) {
         list.add("The storage engine for the table doesn't support");
         list.add("doesn't have this option");
         list.add("must include all columns");
         list.add("not allowed type for this type of partitioning");
         list.add("doesn't support BLOB/TEXT columns");
         list.add("A BLOB field is not allowed in partition function");
+        list.add("Too many keys specified; max 1 keys allowed");
+        list.add("The total length of the partitioning fields is too large");
+        list.add("Got error -1 - 'Unknown error -1' from storage engine");
     }
 
     private enum PartitionOptions {
@@ -242,7 +247,7 @@ public class MySQLTableGenerator {
     }
 
     private void appendColumn() {
-        String columnName = SQLite3Common.createColumnName(columnId);
+        String columnName = DBMSCommon.createColumnName(columnId);
         columns.add(columnName);
         sb.append(columnName);
         appendColumnDefinition();
@@ -255,15 +260,10 @@ public class MySQLTableGenerator {
 
     private void appendColumnDefinition() {
         sb.append(" ");
-        MySQLDataType randomType = MySQLDataType.getRandom();
+        MySQLDataType randomType = MySQLDataType.getRandom(globalState);
         boolean isTextType = randomType == MySQLDataType.VARCHAR;
         appendTypeString(randomType);
         sb.append(" ");
-        // TODO: this was commented out since it makes the implementation of LIKE more
-        // difficult
-        // if (Randomly.getBoolean()) {
-        // sb.append(" ZEROFILL");
-        // }
         boolean isNull = false;
         boolean columnHasPrimaryKey = false;
 
@@ -358,7 +358,7 @@ public class MySQLTableGenerator {
             if (Randomly.getBoolean() && randomType != MySQLDataType.INT && !MySQLBugs.bug99127) {
                 sb.append(" UNSIGNED");
             }
-            if (Randomly.getBoolean()) {
+            if (!globalState.usesPQS() && Randomly.getBoolean()) {
                 sb.append(" ZEROFILL");
             }
         }

@@ -1,13 +1,11 @@
 package sqlancer.postgres.gen;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresColumn;
 import sqlancer.postgres.PostgresSchema.PostgresTable;
@@ -19,9 +17,9 @@ public final class PostgresInsertGenerator {
     private PostgresInsertGenerator() {
     }
 
-    public static Query insert(PostgresGlobalState globalState) {
+    public static SQLQueryAdapter insert(PostgresGlobalState globalState) {
         PostgresTable table = globalState.getSchema().getRandomTable(t -> t.isInsertable());
-        Set<String> errors = new HashSet<>();
+        ExpectedErrors errors = new ExpectedErrors();
         errors.add("cannot insert into column");
         PostgresCommon.addCommonExpressionErrors(errors);
         PostgresCommon.addCommonInsertUpdateErrors(errors);
@@ -98,7 +96,7 @@ public final class PostgresInsertGenerator {
         errors.add("division by zero");
         errors.add("violates foreign key constraint");
         errors.add("data type unknown");
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
     private static void insertRow(PostgresGlobalState globalState, StringBuilder sb, List<PostgresColumn> columns,

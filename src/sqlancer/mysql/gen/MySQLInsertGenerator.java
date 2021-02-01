@@ -1,14 +1,12 @@
 package sqlancer.mysql.gen;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema.MySQLColumn;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
@@ -18,8 +16,7 @@ public class MySQLInsertGenerator {
 
     private final MySQLTable table;
     private final StringBuilder sb = new StringBuilder();
-    boolean canFail;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private final MySQLGlobalState globalState;
 
     public MySQLInsertGenerator(MySQLGlobalState globalState) {
@@ -27,7 +24,7 @@ public class MySQLInsertGenerator {
         table = globalState.getSchema().getRandomTable();
     }
 
-    public static Query insertRow(MySQLGlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter insertRow(MySQLGlobalState globalState) throws SQLException {
         if (Randomly.getBoolean()) {
             return new MySQLInsertGenerator(globalState).generateInsert();
         } else {
@@ -35,8 +32,7 @@ public class MySQLInsertGenerator {
         }
     }
 
-    private Query generateReplace() {
-        canFail = true;
+    private SQLQueryAdapter generateReplace() {
         sb.append("REPLACE");
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -46,7 +42,7 @@ public class MySQLInsertGenerator {
 
     }
 
-    private Query generateInsert() {
+    private SQLQueryAdapter generateInsert() {
         sb.append("INSERT");
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -54,13 +50,11 @@ public class MySQLInsertGenerator {
         }
         if (Randomly.getBoolean()) {
             sb.append(" IGNORE");
-        } else {
-            canFail = true;
         }
         return generateInto();
     }
 
-    private Query generateInto() {
+    private SQLQueryAdapter generateInto() {
         sb.append(" INTO ");
         sb.append(table.getName());
         List<MySQLColumn> columns = table.getRandomNonEmptyColumnSubset();
@@ -97,7 +91,7 @@ public class MySQLInsertGenerator {
         errors.add("Data truncated for column");
         errors.add("cannot be null");
         errors.add("Incorrect decimal value");
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

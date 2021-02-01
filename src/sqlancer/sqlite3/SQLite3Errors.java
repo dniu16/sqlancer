@@ -1,23 +1,23 @@
 package sqlancer.sqlite3;
 
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+
+import sqlancer.common.query.ExpectedErrors;
 
 public final class SQLite3Errors {
 
     private SQLite3Errors() {
     }
 
-    public static void addDeleteErrors(List<String> errors) {
+    public static void addDeleteErrors(ExpectedErrors errors) {
         // DELETE trigger for a view/table to which colomns were added or deleted
         errors.add("columns but");
         // trigger with on conflict clause
         errors.add("ON CONFLICT clause does not match any PRIMARY KEY or UNIQUE constraint");
     }
 
-    public static void addExpectedExpressionErrors(Collection<String> errors) {
+    public static void addExpectedExpressionErrors(ExpectedErrors errors) {
+        errors.add("[SQLITE_BUSY]  The database file is locked");
         errors.add("FTS expression tree is too large");
         errors.add("String or BLOB exceeds size limit");
         errors.add("[SQLITE_ERROR] SQL error or missing database (integer overflow)");
@@ -64,7 +64,7 @@ public final class SQLite3Errors {
 
     }
 
-    public static void addMatchQueryErrors(Collection<String> errors) {
+    public static void addMatchQueryErrors(ExpectedErrors errors) {
         errors.add("unable to use function MATCH in the requested context");
         errors.add("malformed MATCH expression");
         errors.add("fts5: syntax error near");
@@ -75,23 +75,40 @@ public final class SQLite3Errors {
         errors.add("unterminated string");
     }
 
-    public static void addTableManipulationErrors(List<String> errors) {
+    public static void addTableManipulationErrors(ExpectedErrors errors) {
         errors.add("unsupported frame specification");
         errors.add("non-deterministic functions prohibited in CHECK constraints");
         errors.addAll(Arrays.asList("subqueries prohibited in CHECK constraints",
                 "generated columns cannot be part of the PRIMARY KEY", "must have at least one non-generated column"));
     }
 
-    public static void addQueryErrors(Set<String> errors) {
+    public static void addQueryErrors(ExpectedErrors errors) {
         errors.add("ON clause references tables to its right");
     }
 
-    public static void addInsertNowErrors(List<String> errors) {
+    public static void addInsertNowErrors(ExpectedErrors errors) {
         errors.add("non-deterministic use of strftime()");
         errors.add("non-deterministic use of time()");
         errors.add("non-deterministic use of datetime()");
         errors.add("non-deterministic use of julianday()");
         errors.add("non-deterministic use of date()");
+    }
+
+    public static void addInsertUpdateErrors(ExpectedErrors errors) {
+        errors.add("String or BLOB exceeds size limit");
+        errors.add("[SQLITE_CONSTRAINT_CHECK]");
+        errors.add("[SQLITE_CONSTRAINT_PRIMARYKEY]");
+        errors.add("[SQLITE_CONSTRAINT]");
+        errors.add("[SQLITE_CONSTRAINT_NOTNULL]");
+        errors.add("[SQLITE_CONSTRAINT_UNIQUE]");
+        errors.add("cannot INSERT into generated column"); // TODO: filter out generated columns
+        errors.add("A table in the database is locked"); // https://www.sqlite.org/src/tktview?name=56a74875be
+        errors.add("The database file is locked");
+        errors.add("too many levels of trigger recursion");
+        errors.add("cannot UPDATE generated column");
+        errors.add("[SQLITE_ERROR] SQL error or missing database (no such table:");
+        errors.add("[SQLITE_ERROR] SQL error or missing database (foreign key mismatch");
+        errors.add("no such column"); // trigger
     }
 
 }

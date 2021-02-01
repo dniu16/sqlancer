@@ -1,14 +1,12 @@
 package sqlancer.cockroachdb.gen;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBErrors;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public final class CockroachDBSetSessionGenerator {
 
@@ -46,15 +44,15 @@ public final class CockroachDBSetSessionGenerator {
         }
     }
 
-    public static Query create(CockroachDBGlobalState globalState) {
+    public static SQLQueryAdapter create(CockroachDBGlobalState globalState) {
         CockroachDBSetting s = Randomly.fromOptions(CockroachDBSetting.values());
         StringBuilder sb = new StringBuilder("SET SESSION ");
         sb.append(s);
         sb.append("=");
         sb.append(s.f.apply(globalState));
-        Set<String> errors = new HashSet<>();
+        ExpectedErrors errors = new ExpectedErrors();
         CockroachDBErrors.addTransactionErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

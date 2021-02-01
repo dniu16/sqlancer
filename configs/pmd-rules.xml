@@ -17,12 +17,13 @@
 		<exclude name="AvoidStringBufferField" />
 		<exclude name="PreserveStackTrace" /> <!-- TODO -->
 		<exclude name="WhileLoopWithLiteralBoolean" />
-		<exclude name="PositionLiteralsFirstInComparisons" />
+		<exclude name="LiteralsFirstInComparisons" />
 		<exclude name="ForLoopCanBeForeach" />
 		<exclude name="CheckResultSet" />
 		<exclude name="UseTryWithResources" />
 		<exclude name="AvoidReassigningLoopVariables" />
 		<exclude name="AbstractClassWithoutAbstractMethod" />
+		<exclude name="UnusedAssignment" />
 		<priority>2</priority>
 	</rule>
 
@@ -51,6 +52,7 @@
 	</rule>
 	<rule ref="category/java/design.xml">
 		<priority>2</priority>
+		<exclude name="LoosePackageCoupling" />
 		<exclude name="LawOfDemeter" />
 		<exclude name="TooManyMethods" />
 		<exclude name="CyclomaticComplexity" />
@@ -70,6 +72,7 @@
 		<exclude name="SingularField" />
 		<exclude name="ExcessiveMethodLength" />
 		<exclude name="TooManyFields" />
+		<exclude name="SignatureDeclareThrowsException" />
 	</rule>
 	<rule ref="category/java/performance.xml">
 		<priority>2</priority>
@@ -84,5 +87,11 @@
 		<exclude name="OptimizableToArrayCall" />
 		<exclude name="AvoidFileStream" />
 	</rule>
-
+    <rule ref="category/java/documentation.xml">
+		<priority>2</priority>
+		<exclude name="CommentRequired" />
+		<exclude name="CommentSize" />
+		<exclude name="UncommentedEmptyMethodBody" />
+		<exclude name="UncommentedEmptyConstructor" />
+	</rule>
 </ruleset>

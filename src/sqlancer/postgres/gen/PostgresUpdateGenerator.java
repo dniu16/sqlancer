@@ -1,13 +1,10 @@
 package sqlancer.postgres.gen;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresColumn;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
@@ -20,20 +17,21 @@ public final class PostgresUpdateGenerator {
     private PostgresUpdateGenerator() {
     }
 
-    public static Query create(PostgresGlobalState globalState) {
+    public static SQLQueryAdapter create(PostgresGlobalState globalState) {
         PostgresTable randomTable = globalState.getSchema().getRandomTable(t -> t.isInsertable());
         StringBuilder sb = new StringBuilder();
         sb.append("UPDATE ");
         sb.append(randomTable.getName());
         sb.append(" SET ");
-        Set<String> errors = new HashSet<>(Arrays.asList("conflicting key value violates exclusion constraint",
+        ExpectedErrors errors = ExpectedErrors.from("conflicting key value violates exclusion constraint",
                 "reached maximum value of sequence", "violates foreign key constraint", "violates not-null constraint",
                 "violates unique constraint", "out of range", "cannot cast", "must be type boolean", "is not unique",
                 " bit string too long", "can only be updated to DEFAULT", "division by zero",
                 "You might need to add explicit type casts.", "invalid regular expression",
-                "View columns that are not columns of their base relation are not updatable"));
+                "View columns that are not columns of their base relation are not updatable");
         errors.add("multiple assignments to same column"); // view whose columns refer to a column in the referenced
                                                            // table multiple times
+        errors.add("new row violates check option for view");
         List<PostgresColumn> columns = randomTable.getRandomNonEmptyColumnSubset();
         PostgresCommon.addCommonInsertUpdateErrors(errors);
 
@@ -72,7 +70,7 @@ public final class PostgresUpdateGenerator {
             sb.append(PostgresVisitor.asString(where));
         }
 
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
 }

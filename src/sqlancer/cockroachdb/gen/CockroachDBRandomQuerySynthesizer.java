@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBCommon;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
@@ -16,15 +14,16 @@ import sqlancer.cockroachdb.ast.CockroachDBExpression;
 import sqlancer.cockroachdb.ast.CockroachDBSelect;
 import sqlancer.cockroachdb.ast.CockroachDBTableReference;
 import sqlancer.cockroachdb.oracle.CockroachDBNoRECOracle;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public final class CockroachDBRandomQuerySynthesizer {
 
     private CockroachDBRandomQuerySynthesizer() {
     }
 
-    public static Query generate(CockroachDBGlobalState globalState, int nrColumns) {
+    public static SQLQueryAdapter generate(CockroachDBGlobalState globalState, int nrColumns) {
         CockroachDBSelect select = generateSelect(globalState, nrColumns);
-        return new QueryAdapter(CockroachDBVisitor.asString(select));
+        return new SQLQueryAdapter(CockroachDBVisitor.asString(select));
     }
 
     public static CockroachDBSelect generateSelect(CockroachDBGlobalState globalState, int nrColumns) {

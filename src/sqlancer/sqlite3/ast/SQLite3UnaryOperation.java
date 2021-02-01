@@ -3,10 +3,10 @@ package sqlancer.sqlite3.ast;
 import java.util.Optional;
 
 import sqlancer.Randomly;
+import sqlancer.common.visitor.UnaryOperation;
 import sqlancer.sqlite3.SQLite3CollateHelper;
 import sqlancer.sqlite3.schema.SQLite3DataType;
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Column.SQLite3CollateSequence;
-import sqlancer.visitor.UnaryOperation;
 
 public class SQLite3UnaryOperation extends SQLite3Expression implements UnaryOperation<SQLite3Expression> {
 
@@ -34,11 +34,9 @@ public class SQLite3UnaryOperation extends SQLite3Expression implements UnaryOpe
     }
 
     /**
-     * Supported unary prefix operators are these:
+     * Supported unary prefix operators are these: -, +, ~, and NOT.
      *
-     * - + ~ NOT
-     *
-     * @see https://www.sqlite.org/lang_expr.html
+     * @see <a href="https://www.sqlite.org/lang_expr.html">SQL Language Expressions</a>
      *
      */
     public enum UnaryOperator {

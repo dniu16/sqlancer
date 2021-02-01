@@ -1,15 +1,14 @@
 package sqlancer.duckdb.gen;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.gen.UntypedExpressionGenerator;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.duckdb.DuckDBErrors;
 import sqlancer.duckdb.DuckDBProvider.DuckDBGlobalState;
 import sqlancer.duckdb.DuckDBSchema.DuckDBColumn;
@@ -17,12 +16,11 @@ import sqlancer.duckdb.DuckDBSchema.DuckDBCompositeDataType;
 import sqlancer.duckdb.DuckDBSchema.DuckDBDataType;
 import sqlancer.duckdb.DuckDBToStringVisitor;
 import sqlancer.duckdb.ast.DuckDBExpression;
-import sqlancer.gen.UntypedExpressionGenerator;
 
 public class DuckDBTableGenerator {
 
-    public Query getQuery(DuckDBGlobalState globalState) {
-        Set<String> errors = new HashSet<>();
+    public SQLQueryAdapter getQuery(DuckDBGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
         StringBuilder sb = new StringBuilder();
         String tableName = globalState.getSchema().getFreeTableName();
         sb.append("CREATE TABLE ");
@@ -71,7 +69,7 @@ public class DuckDBTableGenerator {
             sb.append(")");
         }
         sb.append(")");
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
     public static String getRandomCollate() {

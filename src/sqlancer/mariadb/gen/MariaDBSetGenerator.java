@@ -6,9 +6,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import sqlancer.MainOptions;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public class MariaDBSetGenerator {
 
@@ -23,7 +23,7 @@ public class MariaDBSetGenerator {
         this.isSingleThreaded = options.getNumberConcurrentThreads() == 1;
     }
 
-    public static Query set(Randomly r, MainOptions options) {
+    public static SQLQueryAdapter set(Randomly r, MainOptions options) {
         return new MariaDBSetGenerator(r, options).get();
     }
 
@@ -162,7 +162,7 @@ public class MariaDBSetGenerator {
         }
     }
 
-    private Query get() {
+    private SQLQueryAdapter get() {
         sb.append("SET ");
         Action a;
         if (isSingleThreaded) {
@@ -190,7 +190,8 @@ public class MariaDBSetGenerator {
         sb.append(a.name);
         sb.append(" = ");
         sb.append(a.prod.apply(r));
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString(), ExpectedErrors
+                .from("At least one of the 'in_to_exists' or 'materialization' optimizer_switch flags must be 'on'"));
     }
 
 }

@@ -1,6 +1,5 @@
 package sqlancer.tidb;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -8,14 +7,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sqlancer.Randomly;
-import sqlancer.schema.AbstractSchema;
-import sqlancer.schema.AbstractTable;
-import sqlancer.schema.AbstractTableColumn;
-import sqlancer.schema.AbstractTables;
-import sqlancer.schema.TableIndex;
+import sqlancer.SQLConnection;
+import sqlancer.common.schema.AbstractRelationalTable;
+import sqlancer.common.schema.AbstractSchema;
+import sqlancer.common.schema.AbstractTableColumn;
+import sqlancer.common.schema.AbstractTables;
+import sqlancer.common.schema.TableIndex;
+import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
 
-public class TiDBSchema extends AbstractSchema<TiDBTable> {
+public class TiDBSchema extends AbstractSchema<TiDBGlobalState, TiDBTable> {
 
     public enum TiDBDataType {
 
@@ -180,7 +181,8 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
         if (trimmedStringType.contains("decimal")) {
             return new TiDBCompositeDataType(TiDBDataType.DECIMAL);
         }
-        if (trimmedStringType.startsWith("var_string") || trimmedStringType.contains("binary")) {
+        if (trimmedStringType.startsWith("var_string") || trimmedStringType.contains("binary")
+                || trimmedStringType.startsWith("varchar")) {
             return new TiDBCompositeDataType(TiDBDataType.TEXT);
         }
         if (trimmedStringType.startsWith("char")) {
@@ -230,7 +232,7 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
         return new TiDBCompositeDataType(primitiveType, size);
     }
 
-    public static class TiDBTable extends AbstractTable<TiDBColumn, TableIndex> {
+    public static class TiDBTable extends AbstractRelationalTable<TiDBColumn, TableIndex, TiDBGlobalState> {
 
         public TiDBTable(String tableName, List<TiDBColumn> columns, List<TableIndex> indexes, boolean isView) {
             super(tableName, columns, indexes, isView);
@@ -242,7 +244,7 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
 
     }
 
-    public static TiDBSchema fromConnection(Connection con, String databaseName) throws SQLException {
+    public static TiDBSchema fromConnection(SQLConnection con, String databaseName) throws SQLException {
         List<TiDBTable> databaseTables = new ArrayList<>();
         List<String> tableNames = getTableNames(con);
         for (String tableName : tableNames) {
@@ -259,7 +261,7 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
         return new TiDBSchema(databaseTables);
     }
 
-    private static List<String> getTableNames(Connection con) throws SQLException {
+    private static List<String> getTableNames(SQLConnection con) throws SQLException {
         List<String> tableNames = new ArrayList<>();
         try (Statement s = con.createStatement()) {
             ResultSet tableRs = s.executeQuery("SHOW TABLES");
@@ -271,7 +273,7 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
         return tableNames;
     }
 
-    private static List<TableIndex> getIndexes(Connection con, String tableName) throws SQLException {
+    private static List<TableIndex> getIndexes(SQLConnection con, String tableName) throws SQLException {
         List<TableIndex> indexes = new ArrayList<>();
         try (Statement s = con.createStatement()) {
             try (ResultSet rs = s.executeQuery(String.format("SHOW INDEX FROM %s", tableName))) {
@@ -284,7 +286,7 @@ public class TiDBSchema extends AbstractSchema<TiDBTable> {
         return indexes;
     }
 
-    private static List<TiDBColumn> getTableColumns(Connection con, String tableName) throws SQLException {
+    private static List<TiDBColumn> getTableColumns(SQLConnection con, String tableName) throws SQLException {
         List<TiDBColumn> columns = new ArrayList<>();
         try (Statement s = con.createStatement()) {
             try (ResultSet rs = s.executeQuery("SHOW COLUMNS FROM " + tableName)) {

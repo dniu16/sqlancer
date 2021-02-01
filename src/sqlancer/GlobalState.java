@@ -1,32 +1,28 @@
 package sqlancer;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import sqlancer.common.query.Query;
+import sqlancer.common.query.SQLancerResultSet;
+import sqlancer.common.schema.AbstractSchema;
+import sqlancer.common.schema.AbstractTable;
 
-import sqlancer.Main.QueryManager;
-import sqlancer.Main.StateLogger;
+public abstract class GlobalState<O extends DBMSSpecificOptions<?>, S extends AbstractSchema<?, ?>, C extends SQLancerDBConnection> {
 
-/**
- * Represents a global state that is valid for a testing session on a given database.
- *
- * @param <O>
- *            the option parameter.
- */
-public abstract class GlobalState<O, S> {
-
-    private Connection con;
+    protected C databaseConnection;
     private Randomly r;
     private MainOptions options;
     private O dmbsSpecificOptions;
     private S schema;
-    private StateLogger logger;
+    private Main.StateLogger logger;
     private StateToReproduce state;
-    private QueryManager manager;
+    private Main.QueryManager<C> manager;
     private String databaseName;
 
-    public void setConnection(Connection con) {
-        this.con = con;
+    public void setConnection(C con) {
+        this.databaseConnection = con;
+    }
+
+    public C getConnection() {
+        return databaseConnection;
     }
 
     @SuppressWarnings("unchecked")
@@ -36,10 +32,6 @@ public abstract class GlobalState<O, S> {
 
     public O getDmbsSpecificOptions() {
         return dmbsSpecificOptions;
-    }
-
-    public Connection getConnection() {
-        return con;
     }
 
     public void setRandomly(Randomly r) {
@@ -58,11 +50,11 @@ public abstract class GlobalState<O, S> {
         this.options = options;
     }
 
-    public void setStateLogger(StateLogger logger) {
+    public void setStateLogger(Main.StateLogger logger) {
         this.logger = logger;
     }
 
-    public StateLogger getLogger() {
+    public Main.StateLogger getLogger() {
         return logger;
     }
 
@@ -74,11 +66,11 @@ public abstract class GlobalState<O, S> {
         return state;
     }
 
-    public QueryManager getManager() {
+    public Main.QueryManager<C> getManager() {
         return manager;
     }
 
-    public void setManager(QueryManager manager) {
+    public void setManager(Main.QueryManager<C> manager) {
         this.manager = manager;
     }
 
@@ -90,7 +82,7 @@ public abstract class GlobalState<O, S> {
         this.databaseName = databaseName;
     }
 
-    public ExecutionTimer executePrologue(Query q) throws SQLException {
+    private ExecutionTimer executePrologue(Query<?> q) throws Exception {
         boolean logExecutionTime = getOptions().logExecutionTime();
         ExecutionTimer timer = null;
         if (logExecutionTime) {
@@ -109,31 +101,28 @@ public abstract class GlobalState<O, S> {
         return timer;
     }
 
-    public void executeEpilogue(Query q, boolean success, ExecutionTimer timer) throws SQLException {
-        boolean logExecutionTime = getOptions().logExecutionTime();
-        if (success && getOptions().printSucceedingStatements()) {
-            System.out.println(q.getQueryString());
-        }
-        if (logExecutionTime) {
-            getLogger().writeCurrent(" -- " + timer.end().asString());
-        }
-        if (q.couldAffectSchema()) {
-            updateSchema();
-        }
-    }
+    protected abstract void executeEpilogue(Query<?> q, boolean success, ExecutionTimer timer) throws Exception;
 
-    public boolean executeStatement(Query q, String... fills) throws SQLException {
+    public boolean executeStatement(Query<C> q, String... fills) throws Exception {
         ExecutionTimer timer = executePrologue(q);
         boolean success = manager.execute(q, fills);
         executeEpilogue(q, success, timer);
         return success;
     }
 
-    public ResultSet executeStatementAndGet(Query q, String... fills) throws SQLException {
+    public SQLancerResultSet executeStatementAndGet(Query<C> q, String... fills) throws Exception {
         ExecutionTimer timer = executePrologue(q);
-        ResultSet result = manager.executeAndGet(q, fills);
+        SQLancerResultSet result = manager.executeAndGet(q, fills);
         boolean success = result != null;
-        executeEpilogue(q, success, timer);
+        if (success) {
+            result.registerEpilogue(() -> {
+                try {
+                    executeEpilogue(q, success, timer);
+                } catch (Exception e) {
+                    throw new AssertionError(e);
+                }
+            });
+        }
         return result;
     }
 
@@ -141,7 +130,7 @@ public abstract class GlobalState<O, S> {
         if (schema == null) {
             try {
                 updateSchema();
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 throw new AssertionError();
             }
         }
@@ -152,6 +141,13 @@ public abstract class GlobalState<O, S> {
         this.schema = schema;
     }
 
-    protected abstract void updateSchema() throws SQLException;
+    public void updateSchema() throws Exception {
+        setSchema(readSchema());
+        for (AbstractTable<?, ?, ?> table : schema.getDatabaseTables()) {
+            table.recomputeCount();
+        }
+    }
+
+    protected abstract S readSchema() throws Exception;
 
 }

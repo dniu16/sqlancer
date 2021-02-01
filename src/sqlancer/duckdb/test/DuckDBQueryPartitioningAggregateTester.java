@@ -1,6 +1,5 @@
 package sqlancer.duckdb.test;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,15 +7,16 @@ import java.util.List;
 
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
-import sqlancer.ast.newast.NewAliasNode;
-import sqlancer.ast.newast.NewBinaryOperatorNode;
-import sqlancer.ast.newast.NewFunctionNode;
-import sqlancer.ast.newast.NewUnaryPostfixOperatorNode;
-import sqlancer.ast.newast.NewUnaryPrefixOperatorNode;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.NewAliasNode;
+import sqlancer.common.ast.newast.NewBinaryOperatorNode;
+import sqlancer.common.ast.newast.NewFunctionNode;
+import sqlancer.common.ast.newast.NewUnaryPostfixOperatorNode;
+import sqlancer.common.ast.newast.NewUnaryPrefixOperatorNode;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.duckdb.DuckDBErrors;
 import sqlancer.duckdb.DuckDBProvider.DuckDBGlobalState;
 import sqlancer.duckdb.DuckDBSchema.DuckDBCompositeDataType;
@@ -64,8 +64,8 @@ public class DuckDBQueryPartitioningAggregateTester extends DuckDBQueryPartition
         metamorphicQuery = createMetamorphicUnionQuery(select, aggregate, select.getFromList());
         secondResult = getAggregateResult(metamorphicQuery);
 
-        state.getState().queryString = "--" + originalQuery + ";\n--" + metamorphicQuery + "\n-- " + firstResult
-                + "\n-- " + secondResult;
+        state.getState().getLocalState().log(
+                "--" + originalQuery + ";\n--" + metamorphicQuery + "\n-- " + firstResult + "\n-- " + secondResult);
         if (firstResult == null && secondResult != null
                 || firstResult != null && (!firstResult.contentEquals(secondResult)
                         && !ComparatorHelper.isEqualDouble(firstResult, secondResult))) {
@@ -89,7 +89,7 @@ public class DuckDBQueryPartitioningAggregateTester extends DuckDBQueryPartition
         DuckDBSelect leftSelect = getSelect(mappedAggregate, from, whereClause, select.getJoinList());
         DuckDBSelect middleSelect = getSelect(mappedAggregate, from, negatedClause, select.getJoinList());
         DuckDBSelect rightSelect = getSelect(mappedAggregate, from, notNullClause, select.getJoinList());
-        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate).toString() + " FROM (";
+        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate) + " FROM (";
         metamorphicQuery += DuckDBToStringVisitor.asString(leftSelect) + " UNION ALL "
                 + DuckDBToStringVisitor.asString(middleSelect) + " UNION ALL "
                 + DuckDBToStringVisitor.asString(rightSelect);
@@ -99,8 +99,8 @@ public class DuckDBQueryPartitioningAggregateTester extends DuckDBQueryPartition
 
     private String getAggregateResult(String queryString) throws SQLException {
         String resultString;
-        QueryAdapter q = new QueryAdapter(queryString, errors);
-        try (ResultSet result = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(queryString, errors);
+        try (SQLancerResultSet result = q.executeAndGet(state)) {
             if (result == null) {
                 throw new IgnoreMeException();
             }
