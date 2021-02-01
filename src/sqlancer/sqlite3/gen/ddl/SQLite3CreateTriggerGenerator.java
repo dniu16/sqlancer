@@ -2,14 +2,13 @@ package sqlancer.sqlite3.gen.ddl;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3Visitor;
 import sqlancer.sqlite3.gen.SQLite3ExpressionGenerator;
 import sqlancer.sqlite3.gen.dml.SQLite3DeleteGenerator;
@@ -31,7 +30,7 @@ public final class SQLite3CreateTriggerGenerator {
         INSERT, DELETE, UPDATE, RAISE
     }
 
-    public static Query create(SQLite3GlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter create(SQLite3GlobalState globalState) throws SQLException {
         SQLite3Schema s = globalState.getSchema();
         StringBuilder sb = new StringBuilder();
         SQLite3Table table = s.getRandomTableOrBailout(t -> !t.isVirtual());
@@ -109,8 +108,8 @@ public final class SQLite3CreateTriggerGenerator {
         }
         sb.append("END");
 
-        return new QueryAdapter(sb.toString(),
-                Arrays.asList("parser stack overflow", "unsupported frame specification"));
+        return new SQLQueryAdapter(sb.toString(),
+                ExpectedErrors.from("parser stack overflow", "unsupported frame specification"));
     }
 
     private static void appendTableNameAndWhen(SQLite3GlobalState globalState, StringBuilder sb, SQLite3Table table) {

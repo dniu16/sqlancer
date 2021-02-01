@@ -1,13 +1,11 @@
 package sqlancer.tidb.gen;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
 import sqlancer.tidb.TiDBSchema.TiDBColumn;
 import sqlancer.tidb.TiDBSchema.TiDBTable;
@@ -17,8 +15,8 @@ public final class TiDBIndexGenerator {
     private TiDBIndexGenerator() {
     }
 
-    public static Query getQuery(TiDBGlobalState globalState) throws SQLException {
-        Set<String> errors = new HashSet<>();
+    public static SQLQueryAdapter getQuery(TiDBGlobalState globalState) throws SQLException {
+        ExpectedErrors errors = new ExpectedErrors();
 
         TiDBTable randomTable = globalState.getSchema().getRandomTable(t -> !t.isView());
         String indexName = globalState.getSchema().getFreeIndexName();
@@ -59,7 +57,7 @@ public final class TiDBIndexGenerator {
         }
         errors.add("Cannot decode index value, because"); // invalid value for generated column
         errors.add("index already exist");
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
 }

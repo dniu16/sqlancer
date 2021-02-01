@@ -1,11 +1,9 @@
 package sqlancer.sqlite3.oracle;
 
-import java.sql.SQLException;
-
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3Visitor;
 
 // tries to trigger a crash
@@ -18,12 +16,12 @@ public class SQLite3Fuzzer implements TestOracle {
     }
 
     @Override
-    public void check() throws SQLException {
+    public void check() throws Exception {
         String s = SQLite3Visitor
                 .asString(SQLite3RandomQuerySynthesizer.generate(globalState, Randomly.smallNumber() + 1)) + ";";
         try {
             if (globalState.getDmbsSpecificOptions().executeQuery) {
-                globalState.executeStatement(new QueryAdapter(s));
+                globalState.executeStatement(new SQLQueryAdapter(s));
                 globalState.getManager().incrementSelectQueryCount();
             }
         } catch (Error e) {

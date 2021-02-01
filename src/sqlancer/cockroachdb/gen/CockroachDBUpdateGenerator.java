@@ -1,11 +1,7 @@
 package sqlancer.cockroachdb.gen;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBErrors;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
@@ -13,14 +9,16 @@ import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBColumn;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBDataType;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBTable;
 import sqlancer.cockroachdb.CockroachDBVisitor;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public final class CockroachDBUpdateGenerator {
 
     private CockroachDBUpdateGenerator() {
     }
 
-    public static Query gen(CockroachDBGlobalState globalState) {
-        Set<String> errors = new HashSet<>();
+    public static SQLQueryAdapter gen(CockroachDBGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
         CockroachDBTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         List<CockroachDBColumn> columns = table.getRandomNonEmptyColumnSubset();
         CockroachDBExpressionGenerator gen = new CockroachDBExpressionGenerator(globalState).setColumns(columns);
@@ -54,7 +52,7 @@ public final class CockroachDBUpdateGenerator {
         errors.add("cannot write directly to computed column");
         CockroachDBErrors.addExpressionErrors(errors);
         CockroachDBErrors.addTransactionErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

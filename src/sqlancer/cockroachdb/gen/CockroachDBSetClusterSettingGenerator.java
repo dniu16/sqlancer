@@ -1,14 +1,12 @@
 package sqlancer.cockroachdb.gen;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Function;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBErrors;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 
 public final class CockroachDBSetClusterSettingGenerator {
 
@@ -41,7 +39,7 @@ public final class CockroachDBSetClusterSettingGenerator {
         }
     }
 
-    public static Query create(CockroachDBGlobalState globalState) {
+    public static SQLQueryAdapter create(CockroachDBGlobalState globalState) {
         CockroachDBClusterSetting s = Randomly.fromOptions(CockroachDBClusterSetting.values());
         StringBuilder sb = new StringBuilder("SET CLUSTER SETTING ");
         sb.append(s.name);
@@ -51,12 +49,12 @@ public final class CockroachDBSetClusterSettingGenerator {
         } else {
             sb.append(s.f.apply(globalState));
         }
-        Set<String> errors = new HashSet<>();
+        ExpectedErrors errors = new ExpectedErrors();
         CockroachDBErrors.addTransactionErrors(errors);
         errors.add("setting updated but timed out waiting to read new value");
 
         CockroachDBErrors.addTransactionErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

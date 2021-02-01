@@ -1,6 +1,5 @@
 package sqlancer.duckdb.test;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -9,15 +8,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.NoRECBase;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
-import sqlancer.ast.newast.ColumnReferenceNode;
-import sqlancer.ast.newast.NewPostfixTextNode;
-import sqlancer.ast.newast.Node;
-import sqlancer.ast.newast.TableReferenceNode;
+import sqlancer.SQLConnection;
+import sqlancer.common.ast.newast.ColumnReferenceNode;
+import sqlancer.common.ast.newast.NewPostfixTextNode;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.ast.newast.TableReferenceNode;
+import sqlancer.common.oracle.NoRECBase;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.duckdb.DuckDBErrors;
 import sqlancer.duckdb.DuckDBProvider.DuckDBGlobalState;
 import sqlancer.duckdb.DuckDBSchema;
@@ -82,8 +82,8 @@ public class DuckDBNoRECOracle extends NoRECBase<DuckDBGlobalState> implements T
         int secondCount = 0;
         unoptimizedQueryString = "SELECT SUM(count) FROM (" + DuckDBToStringVisitor.asString(select) + ") as res";
         errors.add("canceling statement due to statement timeout");
-        Query q = new QueryAdapter(unoptimizedQueryString, errors);
-        ResultSet rs;
+        SQLQueryAdapter q = new SQLQueryAdapter(unoptimizedQueryString, errors);
+        SQLancerResultSet rs;
         try {
             rs = q.executeAndGetLogged(state);
         } catch (Exception e) {
@@ -99,8 +99,9 @@ public class DuckDBNoRECOracle extends NoRECBase<DuckDBGlobalState> implements T
         return secondCount;
     }
 
-    private int getFirstQueryCount(Connection con, List<Node<DuckDBExpression>> tableList, List<DuckDBColumn> columns,
-            Node<DuckDBExpression> randomWhereCondition, List<Node<DuckDBExpression>> joins) throws SQLException {
+    private int getFirstQueryCount(SQLConnection con, List<Node<DuckDBExpression>> tableList,
+            List<DuckDBColumn> columns, Node<DuckDBExpression> randomWhereCondition, List<Node<DuckDBExpression>> joins)
+            throws SQLException {
         DuckDBSelect select = new DuckDBSelect();
         // select.setGroupByClause(groupBys);
         // DuckDBAggregate aggr = new DuckDBAggregate(

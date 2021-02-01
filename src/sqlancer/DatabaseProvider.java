@@ -1,18 +1,20 @@
 package sqlancer;
 
-import java.io.FileWriter;
-import java.sql.Connection;
-import java.sql.SQLException;
+import sqlancer.common.log.LoggableFactory;
 
-public interface DatabaseProvider<G extends GlobalState<O, ?>, O> {
+public interface DatabaseProvider<G extends GlobalState<O, ?, C>, O extends DBMSSpecificOptions<?>, C extends SQLancerDBConnection> {
 
     /**
      * Gets the the {@link GlobalState} class.
+     *
+     * @return the class extending {@link GlobalState}
      */
     Class<G> getGlobalStateClass();
 
     /**
      * Gets the JCommander option class.
+     *
+     * @return the class representing the DBMS-specific options.
      */
     Class<O> getOptionClass();
 
@@ -22,24 +24,22 @@ public interface DatabaseProvider<G extends GlobalState<O, ?>, O> {
      * @param globalState
      *            the state created and is valid for this method call.
      *
+     * @throws Exception
+     *             if creating the database fails.
+     *
      */
-    void generateAndTestDatabase(G globalState) throws SQLException;
+    void generateAndTestDatabase(G globalState) throws Exception;
 
-    Connection createDatabase(G globalState) throws SQLException;
+    C createDatabase(G globalState) throws Exception;
 
     /**
      * The DBMS name is used to name the log directory and command to test the respective DBMS.
+     *
+     * @return the DBMS' name
      */
     String getDBMSName();
 
-    // TODO: remove this
-    /**
-     * Deprecated method to print the database-specific state, previously used for PQS.
-     *
-     * @param writer
-     * @param state
-     */
-    void printDatabaseSpecificState(FileWriter writer, StateToReproduce state);
+    LoggableFactory getLoggableFactory();
 
     StateToReproduce getStateToReproduce(String databaseName);
 

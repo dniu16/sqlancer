@@ -3,14 +3,13 @@ package sqlancer.mysql.gen.tblmaintenance;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
 
 /**
- * @see https://dev.mysql.com/doc/refman/8.0/en/optimize-table.html
+ * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/optimize-table.html">OPTIMIZE TABLE Statement</a>
  */
 public class MySQLOptimize {
 
@@ -21,13 +20,13 @@ public class MySQLOptimize {
         this.tables = tables;
     }
 
-    public static Query optimize(MySQLGlobalState globalState) {
+    public static SQLQueryAdapter optimize(MySQLGlobalState globalState) {
         return new MySQLOptimize(globalState.getSchema().getDatabaseTablesRandomSubsetNotEmpty()).optimize();
     }
 
     // OPTIMIZE [NO_WRITE_TO_BINLOG | LOCAL]
     // TABLE tbl_name [, tbl_name] ...
-    private Query optimize() {
+    private SQLQueryAdapter optimize() {
         sb.append("OPTIMIZE");
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -35,7 +34,7 @@ public class MySQLOptimize {
         }
         sb.append(" TABLE ");
         sb.append(tables.stream().map(t -> t.getName()).collect(Collectors.joining(", ")));
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString());
     }
 
 }

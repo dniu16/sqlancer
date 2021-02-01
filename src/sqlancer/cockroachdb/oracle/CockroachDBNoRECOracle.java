@@ -1,20 +1,14 @@
 package sqlancer.cockroachdb.oracle;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.GlobalState;
 import sqlancer.IgnoreMeException;
-import sqlancer.NoRECBase;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
+import sqlancer.SQLGlobalState;
 import sqlancer.cockroachdb.CockroachDBCommon;
 import sqlancer.cockroachdb.CockroachDBErrors;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
@@ -29,6 +23,11 @@ import sqlancer.cockroachdb.ast.CockroachDBJoin.OuterType;
 import sqlancer.cockroachdb.ast.CockroachDBSelect;
 import sqlancer.cockroachdb.ast.CockroachDBTableReference;
 import sqlancer.cockroachdb.gen.CockroachDBExpressionGenerator;
+import sqlancer.common.oracle.NoRECBase;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 
 public class CockroachDBNoRECOracle extends NoRECBase<CockroachDBGlobalState> implements TestOracle {
 
@@ -60,7 +59,7 @@ public class CockroachDBNoRECOracle extends NoRECBase<CockroachDBGlobalState> im
             throw new IgnoreMeException();
         }
         if (optimizableCount != nonOptimizableCount) {
-            state.getState().queryString = optimizedQueryString + ";\n" + unoptimizedQueryString + ";";
+            state.getState().getLocalState().log(optimizedQueryString + ";\n" + unoptimizedQueryString + ";");
             throw new AssertionError(CockroachDBVisitor.asString(whereCondition));
         }
     }
@@ -98,7 +97,7 @@ public class CockroachDBNoRECOracle extends NoRECBase<CockroachDBGlobalState> im
     }
 
     private int getOptimizedResult(CockroachDBExpression whereCondition, List<CockroachDBExpression> tableList,
-            Set<String> errors, List<CockroachDBExpression> joinExpressions) throws SQLException {
+            ExpectedErrors errors, List<CockroachDBExpression> joinExpressions) throws SQLException {
         CockroachDBSelect select = new CockroachDBSelect();
         CockroachDBColumn c = new CockroachDBColumn("COUNT(*)", null, false, false);
         select.setFetchColumns(Arrays.asList(new CockroachDBColumnReference(c)));
@@ -113,12 +112,12 @@ public class CockroachDBNoRECOracle extends NoRECBase<CockroachDBGlobalState> im
             state.getLogger().writeCurrent(s);
         }
         this.optimizedQueryString = s;
-        Query q = new QueryAdapter(s, errors);
+        SQLQueryAdapter q = new SQLQueryAdapter(s, errors);
         return getCount(state, q);
     }
 
     private int getNonOptimizedResult(CockroachDBExpression whereCondition, List<CockroachDBExpression> tableList,
-            Set<String> errors, List<CockroachDBExpression> joinList) throws SQLException {
+            ExpectedErrors errors, List<CockroachDBExpression> joinList) throws SQLException {
         String fromString = tableList.stream().map(t -> ((CockroachDBTableReference) t).getTable().getName())
                 .collect(Collectors.joining(", "));
         if (!tableList.isEmpty() && !joinList.isEmpty()) {
@@ -131,13 +130,13 @@ public class CockroachDBNoRECOracle extends NoRECBase<CockroachDBGlobalState> im
             state.getLogger().writeCurrent(s);
         }
         this.unoptimizedQueryString = s;
-        Query q = new QueryAdapter(s, errors);
+        SQLQueryAdapter q = new SQLQueryAdapter(s, errors);
         return getCount(state, q);
     }
 
-    private int getCount(GlobalState<?, ?> globalState, Query q) throws AssertionError {
+    private int getCount(SQLGlobalState<?, ?> globalState, SQLQueryAdapter q) throws AssertionError {
         int count = 0;
-        try (ResultSet rs = q.executeAndGet(globalState)) {
+        try (SQLancerResultSet rs = q.executeAndGet(globalState)) {
             if (rs == null) {
                 return -1;
             }

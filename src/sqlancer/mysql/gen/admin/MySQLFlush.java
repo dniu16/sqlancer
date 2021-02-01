@@ -3,13 +3,12 @@ package sqlancer.mysql.gen.admin;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
 
-/**
+/*
  * https://dev.mysql.com/doc/refman/8.0/en/flush.html#flush-tables-variants
  */
 public class MySQLFlush {
@@ -21,11 +20,11 @@ public class MySQLFlush {
         this.tables = tables;
     }
 
-    public static Query create(MySQLGlobalState globalState) {
+    public static SQLQueryAdapter create(MySQLGlobalState globalState) {
         return new MySQLFlush(globalState.getSchema().getDatabaseTablesRandomSubsetNotEmpty()).generate();
     }
 
-    private Query generate() {
+    private SQLQueryAdapter generate() {
         sb.append("FLUSH");
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -45,7 +44,7 @@ public class MySQLFlush {
                 // TODO implement READ LOCK and other variants
             }
         }
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString());
     }
 
 }

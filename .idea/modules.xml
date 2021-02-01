@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+<<<<<<< HEAD
       <module fileurl="file://$PROJECT_DIR$/SQLancer.iml" filepath="$PROJECT_DIR$/SQLancer.iml" />
+=======
+      <module fileurl="file://$PROJECT_DIR$/sqlancer.iml" filepath="$PROJECT_DIR$/sqlancer.iml" />
+>>>>>>> b5e133f986330ceceba3ab2aa7e029a54fef9971
     </modules>
   </component>
 </project>

@@ -1,7 +1,6 @@
 package sqlancer.postgres.oracle.tlp;
 
 import java.io.IOException;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -11,9 +10,10 @@ import org.postgresql.util.PSQLException;
 
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.PostgresVisitor;
@@ -44,6 +44,10 @@ public class PostgresTLPAggregateOracle extends PostgresTLPBase implements TestO
     @Override
     public void check() throws SQLException {
         super.check();
+        aggregateCheck();
+    }
+
+    protected void aggregateCheck() throws SQLException {
         PostgresAggregateFunction aggregateFunction = Randomly.fromOptions(PostgresAggregateFunction.MAX,
                 PostgresAggregateFunction.MIN, PostgresAggregateFunction.SUM, PostgresAggregateFunction.BIT_AND,
                 PostgresAggregateFunction.BIT_OR, PostgresAggregateFunction.BOOL_AND, PostgresAggregateFunction.BOOL_OR,
@@ -67,7 +71,7 @@ public class PostgresTLPAggregateOracle extends PostgresTLPBase implements TestO
         String queryFormatString = "-- %s;\n-- result: %s";
         String firstQueryString = String.format(queryFormatString, originalQuery, firstResult);
         String secondQueryString = String.format(queryFormatString, metamorphicQuery, secondResult);
-        state.getState().queryString = String.format("%s\n%s", firstQueryString, secondQueryString);
+        state.getState().getLocalState().log(String.format("%s\n%s", firstQueryString, secondQueryString));
         if (firstResult == null && secondResult != null || firstResult != null && secondResult == null
                 || firstResult != null && !firstResult.contentEquals(secondResult)
                         && !ComparatorHelper.isEqualDouble(firstResult, secondResult)) {
@@ -78,7 +82,6 @@ public class PostgresTLPAggregateOracle extends PostgresTLPBase implements TestO
                     secondQueryString);
             throw new AssertionError(assertionMessage);
         }
-
     }
 
     private String createMetamorphicUnionQuery(PostgresSelect select, PostgresAggregate aggregate,
@@ -91,7 +94,7 @@ public class PostgresTLPAggregateOracle extends PostgresTLPBase implements TestO
         PostgresSelect leftSelect = getSelect(mappedAggregate, from, whereClause, select.getJoinClauses());
         PostgresSelect middleSelect = getSelect(mappedAggregate, from, negatedClause, select.getJoinClauses());
         PostgresSelect rightSelect = getSelect(mappedAggregate, from, notNullClause, select.getJoinClauses());
-        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate).toString() + " FROM (";
+        metamorphicQuery = "SELECT " + getOuterAggregateFunction(aggregate) + " FROM (";
         metamorphicQuery += PostgresVisitor.asString(leftSelect) + " UNION ALL "
                 + PostgresVisitor.asString(middleSelect) + " UNION ALL " + PostgresVisitor.asString(rightSelect);
         metamorphicQuery += ") as asdf";
@@ -111,8 +114,8 @@ public class PostgresTLPAggregateOracle extends PostgresTLPBase implements TestO
             }
         }
         String resultString;
-        QueryAdapter q = new QueryAdapter(queryString, errors);
-        try (ResultSet result = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(queryString, errors);
+        try (SQLancerResultSet result = q.executeAndGet(state)) {
             if (result == null) {
                 throw new IgnoreMeException();
             }

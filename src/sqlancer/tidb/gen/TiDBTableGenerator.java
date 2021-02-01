@@ -2,15 +2,13 @@ package sqlancer.tidb.gen;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.tidb.TiDBBugs;
 import sqlancer.tidb.TiDBExpressionGenerator;
 import sqlancer.tidb.TiDBProvider.TiDBGlobalState;
@@ -25,9 +23,9 @@ public class TiDBTableGenerator {
     private boolean allowPrimaryKey;
     private final List<TiDBColumn> columns = new ArrayList<>();
     private boolean primaryKeyAsTableConstraints;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
 
-    public Query getQuery(TiDBGlobalState globalState) throws SQLException {
+    public SQLQueryAdapter getQuery(TiDBGlobalState globalState) throws SQLException {
         errors.add("Information schema is changed during the execution of the statement");
         String tableName = globalState.getSchema().getFreeTableName();
         int nrColumns = Randomly.smallNumber() + 1;
@@ -49,7 +47,7 @@ public class TiDBTableGenerator {
         } else {
             createNewTable(gen, sb);
         }
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
     private void createNewTable(TiDBExpressionGenerator gen, StringBuilder sb) {

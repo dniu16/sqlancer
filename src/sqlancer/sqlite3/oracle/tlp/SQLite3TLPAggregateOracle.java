@@ -1,18 +1,18 @@
 package sqlancer.sqlite3.oracle.tlp;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import sqlancer.ComparatorHelper;
 import sqlancer.IgnoreMeException;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.sqlite3.SQLite3Errors;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3Visitor;
 import sqlancer.sqlite3.ast.SQLite3Aggregate;
 import sqlancer.sqlite3.ast.SQLite3Aggregate.SQLite3AggregateFunction;
@@ -31,7 +31,7 @@ import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Tables;
 public class SQLite3TLPAggregateOracle implements TestOracle {
 
     private final SQLite3GlobalState state;
-    private final List<String> errors = new ArrayList<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private SQLite3ExpressionGenerator gen;
 
     public SQLite3TLPAggregateOracle(SQLite3GlobalState state) {
@@ -74,8 +74,8 @@ public class SQLite3TLPAggregateOracle implements TestOracle {
         // state.getState().queryString = "--" + finalText;
         String firstResult;
         String secondResult;
-        QueryAdapter q = new QueryAdapter(originalQuery, errors);
-        try (ResultSet result = q.executeAndGet(state)) {
+        SQLQueryAdapter q = new SQLQueryAdapter(originalQuery, errors);
+        try (SQLancerResultSet result = q.executeAndGet(state)) {
             if (result == null) {
                 throw new IgnoreMeException();
             }
@@ -85,8 +85,8 @@ public class SQLite3TLPAggregateOracle implements TestOracle {
             throw new IgnoreMeException();
         }
 
-        QueryAdapter q2 = new QueryAdapter(metamorphicText, errors);
-        try (ResultSet result = q2.executeAndGet(state)) {
+        SQLQueryAdapter q2 = new SQLQueryAdapter(metamorphicText, errors);
+        try (SQLancerResultSet result = q2.executeAndGet(state)) {
             if (result == null) {
                 throw new IgnoreMeException();
             }
@@ -95,8 +95,8 @@ public class SQLite3TLPAggregateOracle implements TestOracle {
             // TODO
             throw new IgnoreMeException();
         }
-        state.getState().queryString = "--" + originalQuery + "\n--" + metamorphicText + "\n-- " + firstResult + "\n-- "
-                + secondResult;
+        state.getState().getLocalState()
+                .log("--" + originalQuery + "\n--" + metamorphicText + "\n-- " + firstResult + "\n-- " + secondResult);
         if ((firstResult == null && secondResult != null
                 || firstResult != null && !firstResult.contentEquals(secondResult))
                 && !ComparatorHelper.isEqualDouble(firstResult, secondResult)) {

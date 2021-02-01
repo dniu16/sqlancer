@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.Randomly;
-import sqlancer.ast.FunctionNode;
+import sqlancer.common.ast.FunctionNode;
 import sqlancer.postgres.PostgresSchema.PostgresDataType;
 import sqlancer.postgres.ast.PostgresAggregate.PostgresAggregateFunction;
 
 /**
- * @see https://www.sqlite.org/lang_aggfunc.html
+ * @see <a href="https://www.sqlite.org/lang_aggfunc.html">Built-in Aggregate Functions</a>
  */
 public class PostgresAggregate extends FunctionNode<PostgresAggregateFunction, PostgresExpression>
         implements PostgresExpression {
@@ -26,14 +26,6 @@ public class PostgresAggregate extends FunctionNode<PostgresAggregateFunction, P
 
         PostgresAggregateFunction(PostgresDataType... supportedReturnTypes) {
             this.supportedReturnTypes = supportedReturnTypes.clone();
-        }
-
-        public static PostgresAggregateFunction getRandom() {
-            return Randomly.fromOptions(values());
-        }
-
-        public static PostgresAggregateFunction getRandom(PostgresDataType type) {
-            return Randomly.fromOptions(values());
         }
 
         public List<PostgresDataType> getTypes(PostgresDataType returnType) {

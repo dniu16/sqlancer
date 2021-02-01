@@ -3,14 +3,13 @@ package sqlancer.mysql.gen.tblmaintenance;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.mysql.MySQLGlobalState;
 import sqlancer.mysql.MySQLSchema.MySQLTable;
 
 /**
- * @see https://dev.mysql.com/doc/refman/8.0/en/check-table.html
+ * @see <a href="https://dev.mysql.com/doc/refman/8.0/en/check-table.html">CHECK TABLE Statement</a>
  */
 public class MySQLCheckTable {
 
@@ -21,7 +20,7 @@ public class MySQLCheckTable {
         this.tables = tables;
     }
 
-    public static Query check(MySQLGlobalState globalState) {
+    public static SQLQueryAdapter check(MySQLGlobalState globalState) {
         return new MySQLCheckTable(globalState.getSchema().getDatabaseTablesRandomSubsetNotEmpty()).generate();
     }
 
@@ -35,13 +34,13 @@ public class MySQLCheckTable {
     // | EXTENDED
     // | CHANGED
     // }
-    private Query generate() {
+    private SQLQueryAdapter generate() {
         sb.append("CHECK TABLE ");
         sb.append(tables.stream().map(t -> t.getName()).collect(Collectors.joining(", ")));
         sb.append(" ");
         List<String> options = Randomly.subset("FOR UPGRADE", "QUICK", "FAST", "MEDIUM", "EXTENDED", "CHANGED");
         sb.append(options.stream().collect(Collectors.joining(" ")));
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString());
     }
 
 }

@@ -1,16 +1,13 @@
 package sqlancer.sqlite3.gen;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.schema.SQLite3Schema;
 
 /**
- * @see https://www.sqlite.org/lang_reindex.html
+ * @see <a href="https://www.sqlite.org/lang_reindex.html">REINDEX</a>
  */
 public final class SQLite3ReindexGenerator {
 
@@ -21,10 +18,11 @@ public final class SQLite3ReindexGenerator {
         TABLE, INDEX, COLLATION_NAME
     }
 
-    public static Query executeReindex(SQLite3GlobalState globalState) {
+    public static SQLQueryAdapter executeReindex(SQLite3GlobalState globalState) {
         SQLite3Schema s = globalState.getSchema();
         StringBuilder sb = new StringBuilder("REINDEX");
-        List<String> errors = new ArrayList<>();
+        ExpectedErrors errors = new ExpectedErrors();
+        errors.add("The database file is locked");
         Target t = Randomly.fromOptions(Target.values());
         if (Randomly.getBoolean()) {
             sb.append(" ");
@@ -45,6 +43,6 @@ public final class SQLite3ReindexGenerator {
                 throw new AssertionError(t);
             }
         }
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 }

@@ -1,14 +1,12 @@
 package sqlancer.sqlite3.gen.dml;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.sqlite3.SQLite3Errors;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3Visitor;
 import sqlancer.sqlite3.gen.SQLite3ExpressionGenerator;
 import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Table;
@@ -18,12 +16,12 @@ public final class SQLite3DeleteGenerator {
     private SQLite3DeleteGenerator() {
     }
 
-    public static Query deleteContent(SQLite3GlobalState globalState) {
+    public static SQLQueryAdapter deleteContent(SQLite3GlobalState globalState) {
         SQLite3Table tableName = globalState.getSchema().getRandomTable(t -> !t.isView() && !t.isReadOnly());
         return deleteContent(globalState, tableName);
     }
 
-    public static Query deleteContent(SQLite3GlobalState globalState, SQLite3Table tableName) {
+    public static SQLQueryAdapter deleteContent(SQLite3GlobalState globalState, SQLite3Table tableName) {
         StringBuilder sb = new StringBuilder();
         sb.append("DELETE FROM ");
         sb.append(tableName.getName());
@@ -32,7 +30,7 @@ public final class SQLite3DeleteGenerator {
             sb.append(SQLite3Visitor.asString(new SQLite3ExpressionGenerator(globalState)
                     .setColumns(tableName.getColumns()).generateExpression()));
         }
-        List<String> errors = new ArrayList<>();
+        ExpectedErrors errors = new ExpectedErrors();
         SQLite3Errors.addExpectedExpressionErrors(errors);
         errors.addAll(Arrays.asList("[SQLITE_ERROR] SQL error or missing database (foreign key mismatch",
                 "[SQLITE_CONSTRAINT]  Abort due to constraint violation ",
@@ -40,9 +38,9 @@ public final class SQLite3DeleteGenerator {
                 "[SQLITE_ERROR] SQL error or missing database (no such table:", "no such column",
                 "too many levels of trigger recursion", "cannot UPDATE generated column",
                 "cannot INSERT into generated column", "A table in the database is locked",
-                "load_extension() prohibited in triggers and views"));
+                "load_extension() prohibited in triggers and views", "The database file is locked"));
         SQLite3Errors.addDeleteErrors(errors);
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
 }

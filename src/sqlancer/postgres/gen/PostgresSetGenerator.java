@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.function.Function;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.postgres.PostgresGlobalState;
 
 public final class PostgresSetGenerator {
@@ -66,8 +65,6 @@ public final class PostgresSetGenerator {
         // https://www.postgresql.org/docs/devel/runtime-config-query.html
         ENABLE_BITMAPSCAN("enable_bitmapscan", (r) -> Randomly.fromOptions(1, 0)),
         ENABLE_GATHERMERGE("enable_gathermerge", (r) -> Randomly.fromOptions(1, 0)),
-        ENABLE_HASHAGG("enable_hashagg", (r) -> Randomly.fromOptions(1, 0)),
-        ENABLE_HASHAGG_DISK("enable_hashagg_disk", (r) -> Randomly.fromOptions(1, 0)),
         ENABLE_HASHJOIN("enable_hashjoin", (r) -> Randomly.fromOptions(1, 0)),
         ENABLE_INDEXSCAN("enable_indexscan", (r) -> Randomly.fromOptions(1, 0)),
         ENABLE_INDEXONLYSCAN("enable_indexonlyscan", (r) -> Randomly.fromOptions(1, 0)),
@@ -130,7 +127,7 @@ public final class PostgresSetGenerator {
         }
     }
 
-    public static Query create(PostgresGlobalState globalState) {
+    public static SQLQueryAdapter create(PostgresGlobalState globalState) {
         StringBuilder sb = new StringBuilder();
         ArrayList<ConfigurationOption> options = new ArrayList<>(Arrays.asList(ConfigurationOption.values()));
         options.remove(ConfigurationOption.DEFAULT_WITH_OIDS);
@@ -147,7 +144,7 @@ public final class PostgresSetGenerator {
         } else {
             sb.append(option.op.apply(globalState.getRandomly()));
         }
-        return new QueryAdapter(sb.toString());
+        return new SQLQueryAdapter(sb.toString());
     }
 
 }

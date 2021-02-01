@@ -2,11 +2,11 @@ package sqlancer.cockroachdb.gen;
 
 import java.util.List;
 
-import sqlancer.Query;
 import sqlancer.Randomly;
 import sqlancer.cockroachdb.CockroachDBProvider.CockroachDBGlobalState;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBColumn;
 import sqlancer.cockroachdb.CockroachDBSchema.CockroachDBTable;
+import sqlancer.common.query.SQLQueryAdapter;
 
 // https://www.cockroachlabs.com/docs/stable/create-index.html
 public class CockroachDBIndexGenerator extends CockroachDBGenerator {
@@ -15,7 +15,7 @@ public class CockroachDBIndexGenerator extends CockroachDBGenerator {
         super(globalState);
     }
 
-    public static Query create(CockroachDBGlobalState s) {
+    public static SQLQueryAdapter create(CockroachDBGlobalState s) {
         return new CockroachDBIndexGenerator(s).getQuery();
     }
 
@@ -28,6 +28,7 @@ public class CockroachDBIndexGenerator extends CockroachDBGenerator {
         errors.add("schema change statement cannot follow a statement that has written in the same transaction");
         errors.add("https://github.com/cockroachdb/cockroach/issues/35730"); // some array types are not indexable
         errors.add("cannot determine type of empty array. Consider annotating with the desired type");
+        errors.add("incompatible IF expression"); // TODO: investigate; seems to be a bug
         CockroachDBTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         sb.append("CREATE ");
         if (Randomly.getBoolean()) {

@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.NoRECBase;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
+import sqlancer.common.oracle.NoRECBase;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
 import sqlancer.postgres.PostgresCompoundDataType;
 import sqlancer.postgres.PostgresGlobalState;
 import sqlancer.postgres.PostgresSchema;
@@ -49,8 +49,6 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
 
     @Override
     public void check() throws SQLException {
-        // clear left-over query string from previous test
-        state.getState().queryString = null;
         PostgresTables randomTables = s.getRandomTableNonEmptyTables();
         List<PostgresColumn> columns = randomTables.getColumns();
         PostgresExpression randomWhereCondition = getRandomWhereCondition(columns);
@@ -68,8 +66,8 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
             String queryFormatString = "-- %s;\n-- count: %d";
             String firstQueryStringWithCount = String.format(queryFormatString, optimizedQueryString, firstCount);
             String secondQueryStringWithCount = String.format(queryFormatString, unoptimizedQueryString, secondCount);
-            state.getState().queryString = String.format("%s\n%s", firstQueryStringWithCount,
-                    secondQueryStringWithCount);
+            state.getState().getLocalState()
+                    .log(String.format("%s\n%s", firstQueryStringWithCount, secondQueryStringWithCount));
             String assertionMessage = String.format("the counts mismatch (%d and %d)!\n%s\n%s", firstCount, secondCount,
                     firstQueryStringWithCount, secondQueryStringWithCount);
             throw new AssertionError(assertionMessage);
@@ -90,7 +88,9 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
         }
         // JOIN subqueries
         for (int i = 0; i < Randomly.smallNumber(); i++) {
-            PostgresSubquery subquery = PostgresTLPBase.createSubquery(globalState, String.format("sub%d", i));
+            PostgresTables subqueryTables = globalState.getSchema().getRandomTableNonEmptyTables();
+            PostgresSubquery subquery = PostgresTLPBase.createSubquery(globalState, String.format("sub%d", i),
+                    subqueryTables);
             PostgresExpression joinClause = gen.generateExpression(PostgresDataType.BOOLEAN);
             PostgresJoinType options = PostgresJoinType.getRandom();
             PostgresJoin j = new PostgresJoin(subquery, joinClause, options);
@@ -119,8 +119,8 @@ public class PostgresNoRECOracle extends NoRECBase<PostgresGlobalState> implemen
             logger.writeCurrent(unoptimizedQueryString);
         }
         errors.add("canceling statement due to statement timeout");
-        Query q = new QueryAdapter(unoptimizedQueryString, errors);
-        ResultSet rs;
+        SQLQueryAdapter q = new SQLQueryAdapter(unoptimizedQueryString, errors);
+        SQLancerResultSet rs;
         try {
             rs = q.executeAndGet(state);
         } catch (Exception e) {

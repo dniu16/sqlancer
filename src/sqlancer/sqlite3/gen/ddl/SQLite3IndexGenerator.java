@@ -1,16 +1,14 @@
 package sqlancer.sqlite3.gen.ddl;
 
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.sqlite3.SQLite3Errors;
+import sqlancer.sqlite3.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3Provider;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
 import sqlancer.sqlite3.SQLite3ToStringVisitor;
 import sqlancer.sqlite3.ast.SQLite3Expression;
 import sqlancer.sqlite3.gen.SQLite3Common;
@@ -21,10 +19,10 @@ import sqlancer.sqlite3.schema.SQLite3Schema.SQLite3Table;
 // see https://www.sqlite.org/lang_createindex.html
 public class SQLite3IndexGenerator {
 
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
     private final SQLite3GlobalState globalState;
 
-    public static Query insertIndex(SQLite3GlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter insertIndex(SQLite3GlobalState globalState) throws SQLException {
         return new SQLite3IndexGenerator(globalState).create();
     }
 
@@ -32,7 +30,7 @@ public class SQLite3IndexGenerator {
         this.globalState = globalState;
     }
 
-    private Query create() throws SQLException {
+    private SQLQueryAdapter create() throws SQLException {
         SQLite3Table t = globalState.getSchema()
                 .getRandomTableOrBailout(tab -> !tab.isView() && !tab.isVirtual() && !tab.isReadOnly());
         String q = createIndex(t, t.getColumns());
@@ -45,6 +43,7 @@ public class SQLite3IndexGenerator {
         errors.add("non-deterministic use of julianday() in an index");
         errors.add("non-deterministic use of date() in an index");
         errors.add("non-deterministic use of datetime() in an index");
+        errors.add("The database file is locked");
         SQLite3Errors.addExpectedExpressionErrors(errors);
         if (!SQLite3Provider.mustKnowResult) {
             // can only happen when PRAGMA case_sensitive_like=ON;
@@ -58,19 +57,21 @@ public class SQLite3IndexGenerator {
          * https://www.mail-archive.com/sqlite-users@mailinglists.sqlite.org/msg115014.html).
          */
         errors.add("[SQLITE_ERROR] SQL error or missing database (no such column:");
-        return new QueryAdapter(q, errors, true);
+        return new SQLQueryAdapter(q, errors, true);
     }
 
     private String createIndex(SQLite3Table t, List<SQLite3Column> columns) {
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE");
         if (Randomly.getBoolean()) {
-            errors.add("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed");
+            errors.add("UNIQUE constraint failed ");
             sb.append(" UNIQUE");
         }
         sb.append(" INDEX");
         if (Randomly.getBoolean()) {
             sb.append(" IF NOT EXISTS");
+        } else {
+            errors.add("already exists");
         }
         sb.append(" ");
         sb.append(SQLite3Common.getFreeIndexName(globalState.getSchema()));
@@ -105,8 +106,8 @@ public class SQLite3IndexGenerator {
         return sb.toString();
     }
 
-    /**
-     * Appends ASC, DESC, or nothing
+    /*
+     * Appends ASC, DESC, or nothing.
      */
     private void appendPotentialOrdering(StringBuilder sb) {
         if (Randomly.getBoolean()) {

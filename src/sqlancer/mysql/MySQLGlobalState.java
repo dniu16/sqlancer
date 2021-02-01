@@ -3,13 +3,18 @@ package sqlancer.mysql;
 
 import java.sql.SQLException;
 
-import sqlancer.GlobalState;
+import sqlancer.SQLGlobalState;
+import sqlancer.mysql.MySQLOptions.MySQLOracleFactory;
 
-public class MySQLGlobalState extends GlobalState<MySQLOptions, MySQLSchema> {
+public class MySQLGlobalState extends SQLGlobalState<MySQLOptions, MySQLSchema> {
 
     @Override
-    protected void updateSchema() throws SQLException {
-        setSchema(MySQLSchema.fromConnection(getConnection(), getDatabaseName()));
+    protected MySQLSchema readSchema() throws SQLException {
+        return MySQLSchema.fromConnection(getConnection(), getDatabaseName());
+    }
+
+    public boolean usesPQS() {
+        return getDmbsSpecificOptions().oracles.stream().anyMatch(o -> o == MySQLOracleFactory.PQS);
     }
 
 }

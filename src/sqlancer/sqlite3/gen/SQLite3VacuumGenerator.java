@@ -1,28 +1,26 @@
 package sqlancer.sqlite3.gen;
 
-import java.util.Arrays;
-
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.sqlite3.SQLite3Provider.SQLite3GlobalState;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.sqlite3.SQLite3GlobalState;
 
 /**
- * @see https://www.sqlite.org/lang_vacuum.html
+ * @see <a href="https://www.sqlite.org/lang_vacuum.html">VACUUM</a>
  */
 public final class SQLite3VacuumGenerator {
 
     private SQLite3VacuumGenerator() {
     }
 
-    public static Query executeVacuum(SQLite3GlobalState globalState) {
+    public static SQLQueryAdapter executeVacuum(SQLite3GlobalState globalState) {
         StringBuilder sb = new StringBuilder("VACUUM");
         if (Randomly.getBoolean()) {
             sb.append(" ");
             sb.append(Randomly.fromOptions("temp", "main"));
         }
-        return new QueryAdapter(sb.toString(),
-                Arrays.asList("cannot VACUUM from within a transaction", "cannot VACUUM - SQL statements in progress"));
+        return new SQLQueryAdapter(sb.toString(), ExpectedErrors.from("cannot VACUUM from within a transaction",
+                "cannot VACUUM - SQL statements in progress", "The database file is locked"));
     }
 
 }
