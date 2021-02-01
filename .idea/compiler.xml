@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Eclipse" />
     <annotationProcessing>
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-<<<<<<< HEAD
-        <module name="SQLancer" />
-      </profile>
-    </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="SQLancer" target="8" />
-    </bytecodeTargetLevel>
-  </component>
-=======
         <module name="sqlancer" />
       </profile>
     </annotationProcessing>
@@ -25,8 +15,7 @@
   </component>
   <component name="EclipseCompilerSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="sqlancer" options="-properties /Users/jeffniu/Downloads/sqlancer/.settings/org.eclipse.jdt.core.prefs" />
+      <module name="sqlancer" options="-properties /Users/jeffniu/Desktop/sqlancer/.settings/org.eclipse.jdt.core.prefs" />
     </option>
   </component>
->>>>>>> b5e133f986330ceceba3ab2aa7e029a54fef9971
 </project>

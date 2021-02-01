@@ -29,7 +29,7 @@ public class StatementExecutor<G extends GlobalState<?, ?, ?>, A extends Abstrac
         this.queryConsumer = queryConsumer;
     }
 
-    public void executeStatements() throws SQLException {
+    public void executeStatements() throws Exception {
         // casting: value::timestamp instead of timestamp at the start
         // exclude pg_tables from table list
         Randomly r = globalState.getRandomly();

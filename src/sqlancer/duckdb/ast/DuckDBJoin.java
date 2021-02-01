@@ -120,5 +120,4 @@ public class DuckDBJoin implements Node<DuckDBExpression> {
         join.setOuterType(naturalJoinType);
         return join;
     }
-
 }
