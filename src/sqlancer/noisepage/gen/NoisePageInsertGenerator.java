@@ -7,41 +7,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.gen.AbstractInsertGenerator;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.noisepage.NoisePageErrors;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema;
 import sqlancer.noisepage.NoisePageSchema.NoisePageColumn;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 import sqlancer.noisepage.NoisePageToStringVisitor;
-import sqlancer.gen.AbstractInsertGenerator;
-import sqlancer.postgres.PostgresGlobalState;
-import sqlancer.postgres.PostgresSchema;
-import sqlancer.postgres.PostgresVisitor;
-import sqlancer.postgres.ast.PostgresExpression;
-import sqlancer.postgres.gen.PostgresExpressionGenerator;
 
 public class NoisePageInsertGenerator extends AbstractInsertGenerator<NoisePageColumn> {
 
     private final NoisePageGlobalState globalState;
-    private final Set<String> errors = new HashSet<>();
+    private final ExpectedErrors errors = new ExpectedErrors();
 
     public NoisePageInsertGenerator(NoisePageGlobalState globalState) {
         this.globalState = globalState;
     }
 
-    public static Query getQuery(NoisePageGlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter getQuery(NoisePageGlobalState globalState) throws SQLException {
         return new NoisePageInsertGenerator(globalState).generate();
     }
 
-    private Query generate() throws SQLException {
+    private SQLQueryAdapter generate() throws SQLException {
         sb.append("INSERT INTO ");
         NoisePageTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         List<NoisePageColumn> temp = NoisePageSchema.getTableColumns(globalState.getConnection()
                 , table.getName());
         List<NoisePageColumn> columns = new ArrayList<>();
+        System.out.println("insert generator: "+temp.size());
         for(NoisePageColumn c: temp){
             double ran = Math.random();
             if (ran<0.5){
@@ -66,7 +62,7 @@ public class NoisePageInsertGenerator extends AbstractInsertGenerator<NoisePageC
         insertColumns(columns);
         System.out.println("InsertGenerator: "+sb.toString());
         NoisePageErrors.addInsertErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 

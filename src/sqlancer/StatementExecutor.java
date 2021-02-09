@@ -1,6 +1,7 @@
 package sqlancer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import sqlancer.common.query.Query;
@@ -30,8 +31,6 @@ public class StatementExecutor<G extends GlobalState<?, ?, ?>, A extends Abstrac
     }
 
     public void executeStatements() throws Exception {
-        // casting: value::timestamp instead of timestamp at the start
-        // exclude pg_tables from table list
         Randomly r = globalState.getRandomly();
         int[] nrRemaining = new int[actions.length];
         List<A> availableActions = new ArrayList<>();
@@ -46,7 +45,7 @@ public class StatementExecutor<G extends GlobalState<?, ?, ?>, A extends Abstrac
             total += nrPerformed;
         }
         System.out.println("Statement Executor");
-        System.out.println(actions);
+        System.out.println(actions.length);
         System.out.println(availableActions);
         while (total != 0) {
             System.out.println("Total: "+total);

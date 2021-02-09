@@ -9,15 +9,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import sqlancer.IgnoreMeException;
-import sqlancer.NoRECBase;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.TestOracle;
-import sqlancer.ast.newast.ColumnReferenceNode;
-import sqlancer.ast.newast.NewPostfixTextNode;
-import sqlancer.ast.newast.Node;
-import sqlancer.ast.newast.TableReferenceNode;
+import sqlancer.SQLConnection;
+import sqlancer.common.ast.newast.ColumnReferenceNode;
+import sqlancer.common.ast.newast.NewPostfixTextNode;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.ast.newast.TableReferenceNode;
+import sqlancer.common.oracle.NoRECBase;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLancerResultSet;
+
 import sqlancer.noisepage.NoisePageErrors;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema;
@@ -83,8 +85,8 @@ public class NoisePageNoRECOracle extends NoRECBase<NoisePageGlobalState> implem
         int secondCount = 0;
         unoptimizedQueryString = "SELECT SUM(count) FROM (" + NoisePageToStringVisitor.asString(select) + ") as res";
         errors.add("canceling statement due to statement timeout");
-        Query q = new QueryAdapter(unoptimizedQueryString, errors);
-        ResultSet rs;
+        SQLQueryAdapter q = new SQLQueryAdapter(unoptimizedQueryString, errors);
+        SQLancerResultSet rs;
         try {
             rs = q.executeAndGetLogged(state);
         } catch (Exception e) {

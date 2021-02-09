@@ -8,8 +8,11 @@ import java.util.List;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 
-import sqlancer.CompositeTestOracle;
-import sqlancer.TestOracle;
+import sqlancer.DBMSSpecificOptions;
+import sqlancer.OracleFactory;
+import sqlancer.common.oracle.CompositeTestOracle;
+import sqlancer.common.oracle.TestOracle;
+import sqlancer.noisepage.NoisePageOptions.NoisePageOracleFactory;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.test.NoisePageNoRECOracle;
 import sqlancer.noisepage.test.NoisePageQueryPartitioningAggregateTester;
@@ -19,7 +22,7 @@ import sqlancer.noisepage.test.NoisePageQueryPartitioningHavingTester;
 import sqlancer.noisepage.test.NoisePageQueryPartitioningWhereTester;
 
 @Parameters
-public class NoisePageOptions {
+public class NoisePageOptions implements DBMSSpecificOptions<NoisePageOracleFactory>{
 
     @Parameter(names = "--test-collate", arity = 1)
     public boolean testCollate = false;
@@ -90,9 +93,9 @@ public class NoisePageOptions {
     public int maxNumUpdates = 5;
 
     @Parameter(names = "--oracle")
-    public List<NoisePageOracle> oracle = Arrays.asList(NoisePageOracle.QUERY_PARTITIONING);
+    public List<NoisePageOracleFactory> oracles = Arrays.asList(NoisePageOracleFactory.QUERY_PARTITIONING);
 
-    public enum NoisePageOracle {
+    public enum NoisePageOracleFactory implements OracleFactory<NoisePageGlobalState> {
         NOREC {
 
             @Override
@@ -142,12 +145,14 @@ public class NoisePageOptions {
                 oracles.add(new NoisePageQueryPartitioningAggregateTester(globalState));
                 oracles.add(new NoisePageQueryPartitioningDistinctTester(globalState));
                 oracles.add(new NoisePageQueryPartitioningGroupByTester(globalState));
-                return new CompositeTestOracle(oracles);
+                return new CompositeTestOracle(oracles, globalState);
             }
         };
+    }
 
-        public abstract TestOracle create(NoisePageGlobalState globalState) throws SQLException;
-
+    @Override
+    public List<NoisePageOracleFactory> getTestOracleFactory() {
+        return oracles;
     }
 
 }

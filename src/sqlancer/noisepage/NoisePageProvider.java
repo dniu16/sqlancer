@@ -1,22 +1,20 @@
 package sqlancer.noisepage;
 
-import java.sql.*;
-import java.util.HashSet;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import sqlancer.AbstractAction;
-import sqlancer.CompositeTestOracle;
-import sqlancer.GlobalState;
 import sqlancer.IgnoreMeException;
-import sqlancer.ProviderAdapter;
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
-import sqlancer.QueryProvider;
 import sqlancer.Randomly;
+import sqlancer.SQLConnection;
+import sqlancer.SQLGlobalState;
+import sqlancer.SQLProviderAdapter;
 import sqlancer.StatementExecutor;
-import sqlancer.TestOracle;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+import sqlancer.common.query.SQLQueryProvider;
+
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.gen.NoisePageDeleteGenerator;
 import sqlancer.noisepage.gen.NoisePageIndexGenerator;
@@ -26,7 +24,7 @@ import sqlancer.noisepage.gen.NoisePageTableGenerator;
 import sqlancer.noisepage.gen.NoisePageUpdateGenerator;
 //import sqlancer.noisepage.gen.NoisePageViewGenerator;
 
-public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, NoisePageOptions> {
+public class NoisePageProvider extends SQLProviderAdapter<NoisePageGlobalState, NoisePageOptions> {
 
     public NoisePageProvider() {
         super(NoisePageGlobalState.class, NoisePageOptions.class);
@@ -36,8 +34,8 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
 
         INSERT(NoisePageInsertGenerator::getQuery), //
         CREATE_INDEX(NoisePageIndexGenerator::getQuery), //
-//        VACUUM((g) -> new QueryAdapter("VACUUM;")), //
-//        ANALYZE((g) -> new QueryAdapter("ANALYZE;")), //
+//        VACUUM((g) -> new SQLQueryAdapter("VACUUM;")), //
+//        ANALYZE((g) -> new SQLQueryAdapter("ANALYZE;")), //
         DELETE(NoisePageDeleteGenerator::getQuery), //
         UPDATE(NoisePageUpdateGenerator::getQuery); //
 //        CREATE_VIEW(NoisePageViewGenerator::generate), //
@@ -45,21 +43,21 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
 //            Set<String> errors = new HashSet<>();
 //            NoisePageErrors.addExpressionErrors(errors);
 //            NoisePageErrors.addGroupByErrors(errors);
-//            return new QueryAdapter(
+//            return new SQLQueryAdapter(
 //                    "EXPLAIN " + NoisePageToStringVisitor
 //                            .asString(NoisePageRandomQuerySynthesizer.generateSelect(g, Randomly.smallNumber() + 1)),
 //                    errors);
 //        });
 
-        private final QueryProvider<NoisePageGlobalState> queryProvider;
+        private final SQLQueryProvider<NoisePageGlobalState> sqlQueryProvider;
 
-        Action(QueryProvider<NoisePageGlobalState> queryProvider) {
-            this.queryProvider = queryProvider;
+        Action(SQLQueryProvider<NoisePageGlobalState> sqlQueryProvider) {
+            this.sqlQueryProvider = sqlQueryProvider;
         }
 
         @Override
-        public Query getQuery(NoisePageGlobalState state) throws SQLException {
-            return queryProvider.getQuery(state);
+        public SQLQueryAdapter getQuery(NoisePageGlobalState state) throws Exception {
+            return sqlQueryProvider.getQuery(state);
         }
     }
 
@@ -88,24 +86,22 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
         }
     }
 
-    public static class NoisePageGlobalState extends GlobalState<NoisePageOptions, NoisePageSchema> {
+    public static class NoisePageGlobalState extends SQLGlobalState<NoisePageOptions, NoisePageSchema> {
 
         @Override
-        protected void updateSchema() throws SQLException {
-            NoisePageSchema pageSchema = NoisePageSchema.fromConnection(getConnection(), getDatabaseName());
-            System.out.println("update schema");
-            setSchema(pageSchema);
+        protected NoisePageSchema readSchema() throws SQLException {
+            return NoisePageSchema.fromConnection(getConnection(), getDatabaseName());
         }
 
     }
 
     @Override
-    public void generateDatabase(NoisePageGlobalState globalState) throws SQLException {
+    public void generateDatabase(NoisePageGlobalState globalState) throws Exception {
         for (int i = 0; i < Randomly.fromOptions(1, 2); i++) {
             boolean success = false;
             do {
 //                System.out.println("enter");
-                Query qt = new NoisePageTableGenerator().getQuery(globalState);
+                SQLQueryAdapter qt = new NoisePageTableGenerator().getQuery(globalState);
                 success = globalState.executeStatement(qt);
                 if(success){
                     System.out.println(qt.getQueryString()+" query string generate database");
@@ -127,19 +123,19 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
         se.executeStatements();
     }
 
-    @Override
-    protected TestOracle getTestOracle(NoisePageGlobalState globalState) throws SQLException {
-        return new CompositeTestOracle(globalState.getDmbsSpecificOptions().oracle.stream().map(o -> {
-            try {
-                return o.create(globalState);
-            } catch (SQLException e1) {
-                throw new AssertionError(e1);
-            }
-        }).collect(Collectors.toList()));
-    }
+//    @Override
+//    protected TestOracle getTestOracle(NoisePageGlobalState globalState) throws SQLException {
+//        return new CompositeTestOracle(globalState.getDmbsSpecificOptions().oracle.stream().map(o -> {
+//            try {
+//                return o.create(globalState);
+//            } catch (SQLException e1) {
+//                throw new AssertionError(e1);
+//            }
+//        }).collect(Collectors.toList()));
+//    }
 
     @Override
-    public Connection createDatabase(NoisePageGlobalState globalState) throws SQLException {
+    public SQLConnection createDatabase(NoisePageGlobalState globalState) throws SQLException {
 //        String url = "jdbc:postgresql://localhost:15721/";
 //        // use host names, url is wrong
 //        return DriverManager.getConnection(url, globalState.getOptions().getUserName(),
@@ -147,11 +143,11 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
         return makeDefaultConnection();
     }
 
-    public static Connection makeDefaultConnection() throws SQLException {
+    public static SQLConnection makeDefaultConnection() throws SQLException {
         return makeConnection("localhost", 15721, "noisepage");
     }
 
-    public static Connection makeConnection(String host, int port, String username) throws SQLException {
+    public static SQLConnection makeConnection(String host, int port, String username) throws SQLException {
         Properties props = new Properties();
         props.setProperty("user", username);
         props.setProperty("prepareThreshold", "0"); // suppress switchover to binary protocol
@@ -173,7 +169,7 @@ public class NoisePageProvider extends ProviderAdapter<NoisePageGlobalState, Noi
         }
 
         String url = String.format("jdbc:postgresql://%s:%d/", host, port);
-        Connection conn = DriverManager.getConnection(url, props);
+        SQLConnection conn = new SQLConnection(DriverManager.getConnection(url, props));
         return conn;
     }
     @Override

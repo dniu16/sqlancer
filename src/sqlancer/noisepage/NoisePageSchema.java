@@ -5,15 +5,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import sqlancer.Randomly;
+import sqlancer.SQLConnection;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 import sqlancer.postgres.PostgresSchema;
-import sqlancer.schema.AbstractSchema;
-import sqlancer.schema.AbstractTable;
-import sqlancer.schema.AbstractTableColumn;
-import sqlancer.schema.AbstractTables;
-import sqlancer.schema.TableIndex;
+import sqlancer.common.schema.AbstractRelationalTable;
+import sqlancer.common.schema.AbstractSchema;
+import sqlancer.common.schema.AbstractTableColumn;
+import sqlancer.common.schema.AbstractTables;
+import sqlancer.common.schema.TableIndex;
+import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
+import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 
-public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
+public class NoisePageSchema extends AbstractSchema<NoisePageGlobalState, NoisePageTable> {
 
     public enum NoisePageDataType {
 
@@ -227,7 +230,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
         return new NoisePageCompositeDataType(primitiveType, size);
     }
 
-    public static class NoisePageTable extends AbstractTable<NoisePageColumn, TableIndex> {
+    public static class NoisePageTable extends AbstractRelationalTable<NoisePageColumn, TableIndex, NoisePageGlobalState> {
 
         public NoisePageTable(String tableName, List<NoisePageColumn> columns, boolean isView) {
             super(tableName, columns, Collections.emptyList(), isView);
@@ -260,7 +263,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
 
     }
 
-    public static NoisePageSchema fromConnection(Connection con, String databaseName) throws SQLException {
+    public static NoisePageSchema fromConnection(SQLConnection con, String databaseName) throws SQLException {
         List<NoisePageTable> databaseTables = new ArrayList<>();
         List<String> tableNames = getTableNames(con);
         System.out.println("From connection table names: "+tableNames);
@@ -299,7 +302,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
         return resultRows.stream().flatMap(Collection::stream).collect(Collectors.toList());
     }
 
-    public static String getRandomColumnValue(Connection con, String tableName, NoisePageColumn col){
+    public static String getRandomColumnValue(SQLConnection con, String tableName, NoisePageColumn col){
         List<String> values = new ArrayList<>();
         try (Statement s = con.createStatement()) {
             String sql = String.format("SELECT %s FROM %s",col.getName(), tableName);
@@ -327,7 +330,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
         }
     }
 
-    public static List<String> getTableNames(Connection con) throws SQLException {
+    public static List<String> getTableNames(SQLConnection con) throws SQLException {
         List<String> tableNames = new ArrayList<>();
         List<String> res = new ArrayList<>();
         try (Statement s = con.createStatement()) {
@@ -348,7 +351,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
         return res;
     }
 
-    public static List<NoisePageColumn> getTableColumns(Connection con, String tableName) throws SQLException {
+    public static List<NoisePageColumn> getTableColumns(SQLConnection con, String tableName) throws SQLException {
         Set<String> visited = new HashSet<>();
         List<NoisePageColumn> columns = new ArrayList<>();
         try (Statement s = con.createStatement()) {
@@ -387,7 +390,7 @@ public class NoisePageSchema extends AbstractSchema<NoisePageTable> {
 
         return columns;
     }
-    public String getFreeTableName(Connection connection) throws SQLException {
+    public String getFreeTableName(SQLConnection connection) throws SQLException {
         int i = 0;
         if (Randomly.getBooleanWithRatherLowProbability()) {
             i = (int) Randomly.getNotCachedInteger(0, 100);

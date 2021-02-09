@@ -8,12 +8,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.gen.UntypedExpressionGenerator;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
+
 import sqlancer.noisepage.NoisePageErrors;
-import sqlancer.noisepage.NoisePageProvider;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema;
 import sqlancer.noisepage.NoisePageSchema.NoisePageColumn;
@@ -21,12 +22,12 @@ import sqlancer.noisepage.NoisePageSchema.NoisePageCompositeDataType;
 import sqlancer.noisepage.NoisePageSchema.NoisePageDataType;
 import sqlancer.noisepage.NoisePageToStringVisitor;
 import sqlancer.noisepage.ast.NoisePageExpression;
-import sqlancer.gen.UntypedExpressionGenerator;
+
 
 public class NoisePageTableGenerator {
 
-    public Query getQuery(NoisePageGlobalState globalState) throws SQLException {
-        Set<String> errors = new HashSet<>();
+    public SQLQueryAdapter getQuery(NoisePageGlobalState globalState) throws SQLException {
+        ExpectedErrors errors = new ExpectedErrors();
         StringBuilder sb = new StringBuilder();
         String tableName = globalState.getSchema().getFreeTableName(globalState.getConnection());
         Statement s = globalState.getConnection().createStatement();
@@ -82,7 +83,7 @@ public class NoisePageTableGenerator {
         sb.append(")");
 //        System.out.println("print out sb");
 //        System.out.println(sb.toString());
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
     public static String getRandomCollate() {

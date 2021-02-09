@@ -5,9 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.noisepage.NoisePageErrors;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema;
@@ -23,9 +23,9 @@ public final class NoisePageDeleteGenerator {
 
     }
 
-    public static Query getQuery(NoisePageGlobalState globalState) throws SQLException {
+    public static SQLQueryAdapter getQuery(NoisePageGlobalState globalState) throws SQLException {
         StringBuilder sb = new StringBuilder("DELETE FROM ");
-        Set<String> errors = new HashSet<>();
+        ExpectedErrors errors = new ExpectedErrors();
         NoisePageTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         sb.append(table.getName());
 //        if (Randomly.getBoolean()) {
@@ -54,7 +54,7 @@ public final class NoisePageDeleteGenerator {
 //            System.out.println("Delete Generator: "+sb.toString());
 //        }
         NoisePageErrors.addExpressionErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }

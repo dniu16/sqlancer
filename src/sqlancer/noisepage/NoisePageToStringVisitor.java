@@ -1,7 +1,7 @@
 package sqlancer.noisepage;
 
-import sqlancer.ast.newast.NewToStringVisitor;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.NewToStringVisitor;
+import sqlancer.common.ast.newast.Node;
 import sqlancer.noisepage.ast.NoisePageConstant;
 import sqlancer.noisepage.ast.NoisePageExpression;
 //import sqlancer.noisepage.ast.NoisePageJoin;

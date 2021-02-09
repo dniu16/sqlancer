@@ -4,19 +4,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema;
 import sqlancer.noisepage.NoisePageSchema.NoisePageColumn;
 import sqlancer.noisepage.NoisePageSchema.NoisePageTable;
 import sqlancer.noisepage.NoisePageToStringVisitor;
 import sqlancer.noisepage.ast.NoisePageExpression;
-import sqlancer.postgres.PostgresSchema;
-import sqlancer.schema.TableIndex;
-import sqlancer.sqlite3.gen.SQLite3Common;
 
 public final class NoisePageIndexGenerator {
 
@@ -24,8 +21,8 @@ public final class NoisePageIndexGenerator {
     private NoisePageIndexGenerator() {
     }
 
-    public static Query getQuery(NoisePageGlobalState globalState) {
-        Set<String> errors = new HashSet<>();
+    public static SQLQueryAdapter getQuery(NoisePageGlobalState globalState) {
+        ExpectedErrors errors = new ExpectedErrors();
         StringBuilder sb = new StringBuilder();
         sb.append("CREATE ");
 //        if (Randomly.getBoolean()) {
@@ -65,7 +62,7 @@ public final class NoisePageIndexGenerator {
         if (globalState.getDmbsSpecificOptions().testRowid) {
             errors.add("Cannot create an index on the rowid!");
         }
-        return new QueryAdapter(sb.toString(), errors, true);
+        return new SQLQueryAdapter(sb.toString(), errors, true);
     }
 
 //    private static String getNewIndexName(NoisePageTable randomTable) {

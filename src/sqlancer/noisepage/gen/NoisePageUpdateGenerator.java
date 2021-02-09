@@ -4,10 +4,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import sqlancer.Query;
-import sqlancer.QueryAdapter;
 import sqlancer.Randomly;
-import sqlancer.ast.newast.Node;
+import sqlancer.common.ast.newast.Node;
+import sqlancer.common.query.ExpectedErrors;
+import sqlancer.common.query.SQLQueryAdapter;
 import sqlancer.noisepage.NoisePageErrors;
 import sqlancer.noisepage.NoisePageProvider.NoisePageGlobalState;
 import sqlancer.noisepage.NoisePageSchema.NoisePageColumn;
@@ -21,9 +21,9 @@ public final class NoisePageUpdateGenerator {
     }
 
 
-    public static Query getQuery(NoisePageGlobalState globalState) {
+    public static SQLQueryAdapter getQuery(NoisePageGlobalState globalState) {
         StringBuilder sb = new StringBuilder("UPDATE ");
-        Set<String> errors = new HashSet<>();
+        ExpectedErrors errors = new ExpectedErrors();
         NoisePageTable table = globalState.getSchema().getRandomTable(t -> !t.isView());
         sb.append(table.getName());
         NoisePageExpressionGenerator gen = new NoisePageExpressionGenerator(globalState).setColumns(table.getColumns());
@@ -52,7 +52,7 @@ public final class NoisePageUpdateGenerator {
             sb.append(NoisePageToStringVisitor.asString(expr));
         }
         NoisePageErrors.addInsertErrors(errors);
-        return new QueryAdapter(sb.toString(), errors);
+        return new SQLQueryAdapter(sb.toString(), errors);
     }
 
 }
